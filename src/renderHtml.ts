@@ -10,6 +10,7 @@ export function renderHtml(content: string) {
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>MultiTwitch Live Selector</title>
     <link rel="icon" type="image/x-icon" href="/multitwitch.ico">
+    <link rel="icon" type="image/png" href="/multitwitch.png">
     <style>
         * { box-sizing: border-box; }
         body { background-color: #0e0e10; color: #e0e0e0; font-family: 'Arial', sans-serif; margin:0; padding:0; overflow:hidden; }
@@ -95,7 +96,12 @@ export function renderHtml(content: string) {
         <div class="top-bar-inner">
             <div class="nav-left">
                 <a href="https://twitch.tv" target="_blank" rel="noopener" class="twitch-logo" title="Twitch Home" style="text-decoration:none;">
-                    <img src="/twitch.ico" alt="Twitch" style="width:40px;height:40px;display:block;filter:drop-shadow(0 2px 4px rgba(0,0,0,.4));" />
+                    <svg width="40" height="40" viewBox="0 0 240 240" xmlns="http://www.w3.org/2000/svg" style="display:block;">
+                        <rect width="240" height="240" rx="36" fill="#9146FF"/>
+                        <path fill="#FFF" d="M70 60 50 100v90h60v30h35l30-30h35l40-40V60H70zm145 85-20 20h-45l-30 30v-30H70V80h145v65z"/>
+                        <rect x="140" y="100" width="20" height="40" fill="#FFF"/>
+                        <rect x="105" y="100" width="20" height="40" fill="#FFF"/>
+                    </svg>
                 </a>
             </div>
             <div class="nav-center"><h1>MultiTwitch Live Channel Selector</h1></div>
@@ -169,8 +175,7 @@ export function renderHtml(content: string) {
             let liveStreams = []; // current live streams enriched
             let filteredStreams = []; // after filtering/sorting
             let currentSort = { field: null, direction: null }; // direction: 'asc' | 'desc'
-            let refreshTimer = null;
-            const REFRESH_INTERVAL_MS = 60_000; // 1 minute background refresh
+            // Background refresh timer removed; refresh only when page shown/focused.
 
             // Utility
             const qs = sel => document.querySelector(sel);
@@ -211,7 +216,6 @@ export function renderHtml(content: string) {
                         await loadAutoSelectPreferences();
                         await loadFollowedChannels();
                         await refreshLiveStreams();
-                        scheduleAutoRefresh();
                     } else {
                         throw new Error('User not found');
                     }
@@ -243,7 +247,7 @@ export function renderHtml(content: string) {
                 selectedChannels.clear();
                 autoSelectPreferences.clear();
                 hydrateUserUI();
-                clearTimeout(refreshTimer);
+                // no background timer to clear
                 if(!auto) startAuth();
             }
             $('logoutBtn').addEventListener('click', () => logout(false));
@@ -274,11 +278,13 @@ export function renderHtml(content: string) {
                 if(!userId) return;
                 try {
                     console.log('[autoselect] add', streamer);
-                    await fetch(location.origin + '/api/autoselect', {
+                    const resp = await fetch(location.origin + '/api/autoselect', {
                         method:'POST', headers:{'Content-Type':'application/json'},
                         body: JSON.stringify({ user_id: userId, streamer_username: streamer })
                     });
-                    await loadAutoSelectPreferences();
+                    const j = await resp.json();
+                    console.log('[autoselect] add response', j);
+                    autoSelectPreferences.add(streamer.toLowerCase());
                     syncFollowerToggleStates();
                 } catch(e){ console.warn('addAutoSelect failed', e); }
             }
@@ -286,8 +292,10 @@ export function renderHtml(content: string) {
                 if(!userId) return;
                 try {
                     console.log('[autoselect] remove', streamer);
-                    await fetch(location.origin + '/api/autoselect?user_id=' + encodeURIComponent(userId) + '&streamer_username=' + encodeURIComponent(streamer), { method:'DELETE' });
-                    await loadAutoSelectPreferences();
+                    const resp = await fetch(location.origin + '/api/autoselect?user_id=' + encodeURIComponent(userId) + '&streamer_username=' + encodeURIComponent(streamer), { method:'DELETE' });
+                    const j = await resp.json();
+                    console.log('[autoselect] remove response', j);
+                    autoSelectPreferences.delete(streamer.toLowerCase());
                     syncFollowerToggleStates();
                 } catch(e){ console.warn('removeAutoSelect failed', e); }
             }
@@ -351,12 +359,7 @@ export function renderHtml(content: string) {
                 updateLastRefreshed();
             }
 
-            function scheduleAutoRefresh(){
-                clearTimeout(refreshTimer);
-                refreshTimer = setTimeout(async () => {
-                    try { await refreshLiveStreams(); } finally { scheduleAutoRefresh(); }
-                }, REFRESH_INTERVAL_MS);
-            }
+            function scheduleAutoRefresh(){ /* disabled */ }
 
             // ---------------- Rendering & Interaction ----------------
             function calculateUptime(startedAt){
