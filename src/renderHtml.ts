@@ -53,11 +53,14 @@ export function renderHtml(content: string) {
         .stream-game { font-size:12px; color:#a970ff; margin:2px 0; font-weight:500; }
         .stream-uptime { font-size:11px; color:#8d8d96; margin:2px 0; }
         .viewer-count { font-size:14px; color:#ff6b6b; font-weight:600; margin-left:auto; padding:4px 8px; background:rgba(255,107,107,0.1); border-radius:12px; }
-        .follower-pane { width:250px; background:#1b1b1f; border-left:1px solid #303036; transition:width .3s ease; overflow:hidden; }
+    .follower-pane { width:250px; background:#1b1b1f; border-left:1px solid #303036; transition:width .3s ease; overflow:hidden; }
         .follower-pane.collapsed { width:40px; }
         .follower-header { padding:20px 20px 10px 20px; border-bottom:1px solid #303036; display:flex; justify-content:space-between; align-items:center; }
         .follower-header h3 { margin:0; font-size:14px; font-weight:600; white-space:nowrap; }
-        .follower-column-headers { display:flex; align-items:center; padding:10px 20px 5px 20px; border-bottom:1px solid #303036; font-size:11px; font-weight:600; color:#8d8d96; letter-spacing:.5px; }
+    .follower-filter-wrap { padding:10px 20px 6px 20px; border-bottom:1px solid #303036; }
+    #followerFilter { width:100%; padding:6px 10px; background:#24242a; border:1px solid #303036; border-radius:6px; color:#e0e0e0; font-size:12px; }
+    #followerFilter:focus { outline:none; border-color:#a970ff; }
+    .follower-column-headers { display:flex; align-items:center; padding:8px 20px 5px 20px; border-bottom:1px solid #303036; font-size:11px; font-weight:600; color:#8d8d96; letter-spacing:.5px; }
         .header-streamer { flex:1; margin-left:18px; }
         .follower-list { padding:10px; overflow-y:auto; height:calc(100vh - 180px); }
         .follower-item { display:flex; align-items:center; padding:8px 10px; margin:2px 0; border-radius:6px; transition:background .25s; white-space:nowrap; }
@@ -73,7 +76,16 @@ export function renderHtml(content: string) {
         .follower-pane.collapsed .follower-header h3, .follower-pane.collapsed .follower-name, .follower-pane.collapsed .follower-column-headers { display:none; }
         .follower-pane.collapsed .follower-item { justify-content:center; }
         .follower-pane.collapsed .auto-select-toggle { display:none; }
+        .collapse-btn { background:none; border:none; color:#cfcfd4; cursor:pointer; font-size:18px; line-height:1; padding:4px 6px; border-radius:6px; transition:background .25s,color .25s, transform .25s; }
+        .collapse-btn:hover { color:#a970ff; background:#24242a; }
+        .follower-pane.collapsed .collapse-btn { transform:rotate(180deg); }
         .no-results { text-align:center; color:#8d8d96; padding:40px 20px; font-style:italic; }
+
+        /* Custom scrollbars (WebKit/Blink) */
+        .filter-pane::-webkit-scrollbar, .results-area::-webkit-scrollbar, .follower-list::-webkit-scrollbar { width:10px; }
+        .filter-pane::-webkit-scrollbar-track, .results-area::-webkit-scrollbar-track, .follower-list::-webkit-scrollbar-track { background:#252525; border-radius:10px; }
+        .filter-pane::-webkit-scrollbar-thumb, .results-area::-webkit-scrollbar-thumb, .follower-list::-webkit-scrollbar-thumb { background:#D9D9D9; border-radius:10px; transition:background .3s; }
+        .filter-pane::-webkit-scrollbar-thumb:hover, .results-area::-webkit-scrollbar-thumb:hover, .follower-list::-webkit-scrollbar-thumb:hover { background:#BFBFBF; }
     </style>
 </head>
 <body>
@@ -121,7 +133,10 @@ export function renderHtml(content: string) {
         <div class="follower-pane" id="followerPane">
             <div class="follower-header">
                 <h3>Followed Channels</h3>
-                <button class="collapse-btn" id="collapseBtn">‹</button>
+                <button class="collapse-btn" id="collapseBtn" title="Collapse / Expand">‹</button>
+            </div>
+            <div class="follower-filter-wrap">
+                <input id="followerFilter" type="text" placeholder="Filter followers..." />
             </div>
             <div class="follower-column-headers">
                 <div class="header-streamer">Streamer</div>
@@ -257,7 +272,7 @@ export function renderHtml(content: string) {
                         body: JSON.stringify({ user_id: userId, streamer_username: streamer })
                     });
                     await loadAutoSelectPreferences();
-                    renderFollowerList();
+                    syncFollowerToggleStates();
                 } catch(e){ console.warn('addAutoSelect failed', e); }
             }
             async function removeAutoSelect(streamer){
@@ -265,7 +280,7 @@ export function renderHtml(content: string) {
                 try {
                     await fetch(location.origin + '/api/autoselect?user_id=' + encodeURIComponent(userId) + '&streamer_username=' + encodeURIComponent(streamer), { method:'DELETE' });
                     await loadAutoSelectPreferences();
-                    renderFollowerList();
+                    syncFollowerToggleStates();
                 } catch(e){ console.warn('removeAutoSelect failed', e); }
             }
             async function toggleAutoSelect(streamer){
@@ -306,6 +321,7 @@ export function renderHtml(content: string) {
                     if(data.data) liveStreams.push(...data.data);
                 }
                 // Enrich with mapping for quick lookups
+                populateGameFilter();
                 applyFilters();
                 renderFollowerList();
                 updateLastRefreshed();
@@ -392,13 +408,15 @@ export function renderHtml(content: string) {
 
             // ---------------- Filters & Sorting ----------------
             function populateGameFilter(){
-                const select = $('gameFilter');
+                const select = $('gameFilter'); if(!select) return;
+                const prev = select.value;
                 const games = Array.from(new Set(liveStreams.map(function(s){ return s.game_name; }).filter(Boolean))).sort();
                 let html = '<option value="">All Games</option>';
                 games.forEach(function(g){
                     html += '<option value="' + g.replace(/"/g,'&quot;') + '">' + g + '</option>';
                 });
                 select.innerHTML = html;
+                if(prev && Array.from(select.options).some(o=>o.value===prev)) select.value = prev;
             }
 
             function applyFilters(){
@@ -458,8 +476,11 @@ export function renderHtml(content: string) {
                     list.innerHTML = '<div class="no-results" style="padding:10px;">No followed channels</div>';
                     return;
                 }
+                const filterValue = ($('followerFilter')?.value || '').toLowerCase();
                 const liveLoginSet = new Set(liveStreams.map(s=>s.user_login.toLowerCase()));
-                const sorted = [...followedChannels].sort((a,b)=> a.broadcaster_login.localeCompare(b.broadcaster_login));
+                const sorted = [...followedChannels]
+                    .filter(ch => !filterValue || ch.broadcaster_login.toLowerCase().includes(filterValue))
+                    .sort((a,b)=> a.broadcaster_login.localeCompare(b.broadcaster_login));
                 sorted.forEach(ch => {
                     const item = document.createElement('div'); item.className='follower-item';
                     const liveDot = document.createElement('div'); liveDot.className='live-indicator ' + (liveLoginSet.has(ch.broadcaster_login.toLowerCase()) ? '' : 'offline');
@@ -468,13 +489,28 @@ export function renderHtml(content: string) {
                     const toggle = document.createElement('div'); toggle.className='toggle-switch'; if(autoSelectPreferences.has(ch.broadcaster_login.toLowerCase())) toggle.classList.add('active');
                     const slider = document.createElement('div'); slider.className='toggle-slider';
                     toggle.appendChild(slider); toggleWrap.appendChild(toggle);
-                    toggle.addEventListener('click', async (e)=>{
+                    toggle.addEventListener('click', (e)=>{
                         e.preventDefault(); e.stopPropagation();
-                        await toggleAutoSelect(ch.broadcaster_login);
-                        if(toggle.classList.contains('active')) toggle.classList.remove('active'); else toggle.classList.add('active');
+                        const isActiveNow = toggle.classList.toggle('active');
+                        toggleAutoSelect(ch.broadcaster_login).catch(err => {
+                            console.warn('toggleAutoSelect error', err);
+                            // revert on error
+                            if(isActiveNow) toggle.classList.remove('active'); else toggle.classList.add('active');
+                        });
                     });
                     item.appendChild(liveDot); item.appendChild(name); item.appendChild(toggleWrap);
                     list.appendChild(item);
+                });
+            }
+
+            function syncFollowerToggleStates(){
+                const list = $('followerList'); if(!list) return;
+                list.querySelectorAll('.follower-item').forEach(item => {
+                    const nameEl = item.querySelector('.follower-name');
+                    const toggle = item.querySelector('.toggle-switch');
+                    if(!nameEl || !toggle) return;
+                    const login = nameEl.textContent.toLowerCase();
+                    if(autoSelectPreferences.has(login)) toggle.classList.add('active'); else toggle.classList.remove('active');
                 });
             }
 
@@ -482,7 +518,14 @@ export function renderHtml(content: string) {
             $('collapseBtn').addEventListener('click', ()=>{
                 const pane = $('followerPane');
                 pane.classList.toggle('collapsed');
-                $('collapseBtn').textContent = pane.classList.contains('collapsed') ? '›' : '‹';
+                // Keep arrow direction consistent: rotate via CSS; text stays constant
+            });
+
+            // Follower filter input
+            document.addEventListener('input', (e)=>{
+                if(e.target && e.target.id === 'followerFilter'){
+                    renderFollowerList();
+                }
             });
 
             // ---------------- Refresh & Visibility ----------------
