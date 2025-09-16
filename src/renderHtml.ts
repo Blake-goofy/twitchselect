@@ -256,9 +256,9 @@ export function renderHtml(content: string) {
             const WORKER_BASE = location.origin; // if different domain, set explicitly
 
             async function loadAutoSelectPreferences(){
-                autoSelectPreferences.clear();
-                autoSelectIdMap = {};
                 if(!userId) return;
+                const tempSet = new Set();
+                const tempMap: any = {};
                 try {
                     console.log('[autoselect] loading preferences for user', userId);
                     const resp = await fetch(location.origin + '/api/autoselect?user_id=' + encodeURIComponent(userId));
@@ -266,10 +266,13 @@ export function renderHtml(content: string) {
                     if(data.preferences){
                         data.preferences.forEach(p => {
                             const uname = (p.streamer_username||'').toLowerCase();
-                            autoSelectPreferences.add(uname);
-                            autoSelectIdMap[uname] = p.id;
+                            tempSet.add(uname);
+                            tempMap[uname] = p.id;
                         });
-                        console.log('[autoselect] loaded', autoSelectPreferences.size, 'preferences');
+                        autoSelectPreferences = tempSet; // atomic swap
+                        autoSelectIdMap = tempMap;
+                        console.log('[autoselect] loaded', autoSelectPreferences.size, 'preferences (swapped)');
+                        syncFollowerToggleStates();
                     }
                 } catch(e){ console.warn('Failed to load autoselect prefs', e); }
             }
@@ -285,11 +288,7 @@ export function renderHtml(content: string) {
                     const j = await resp.json();
                     console.log('[autoselect] add response', j);
                     autoSelectPreferences.add(streamer.toLowerCase());
-                    console.log('[autoselect] set size (optimistic)', autoSelectPreferences.size);
-                    // Reconcile actual persisted list (non-blocking)
-                    loadAutoSelectPreferences().then(()=>{
-                        console.log('[autoselect] reconciled size', autoSelectPreferences.size);
-                    });
+                    console.log('[autoselect] set size (optimistic, no reload)', autoSelectPreferences.size);
                     syncFollowerToggleStates();
                 } catch(e){ console.warn('addAutoSelect failed', e); }
             }
@@ -301,10 +300,7 @@ export function renderHtml(content: string) {
                     const j = await resp.json();
                     console.log('[autoselect] remove response', j);
                     autoSelectPreferences.delete(streamer.toLowerCase());
-                    console.log('[autoselect] set size (optimistic)', autoSelectPreferences.size);
-                    loadAutoSelectPreferences().then(()=>{
-                        console.log('[autoselect] reconciled size', autoSelectPreferences.size);
-                    });
+                    console.log('[autoselect] set size (optimistic, no reload)', autoSelectPreferences.size);
                     syncFollowerToggleStates();
                 } catch(e){ console.warn('removeAutoSelect failed', e); }
             }
