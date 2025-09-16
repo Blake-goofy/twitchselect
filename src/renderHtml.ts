@@ -258,7 +258,7 @@ export function renderHtml(content: string) {
             async function loadAutoSelectPreferences(){
                 if(!userId) return;
                 const tempSet = new Set();
-                const tempMap: any = {};
+                const tempMap = {};
                 try {
                     console.log('[autoselect] loading preferences for user', userId);
                     const resp = await fetch(location.origin + '/api/autoselect?user_id=' + encodeURIComponent(userId));
