@@ -1,0 +1,16 @@
+{
+  "compatibility_date": "2025-04-01",
+  "main": "src/index.ts",
+  "name": "twitchselect",
+  "upload_source_maps": true,
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_id": "75100342-4499-4a82-88f8-3ac45f22e1fd",
+      "database_name": "twitchselect-db"
+    }
+  ],
+  "observability": {
+    "enabled": true
+  }
+}
