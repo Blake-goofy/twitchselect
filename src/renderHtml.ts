@@ -75,7 +75,9 @@ export function renderHtml(content: string) {
         .follower-name { font-size:13px; overflow:hidden; text-overflow:ellipsis; color:inherit; text-decoration:none; cursor:pointer; display:inline-block; }
         .follower-pane.collapsed .follower-header h3, .follower-pane.collapsed .follower-name, .follower-pane.collapsed .follower-column-headers { display:none; }
         .follower-pane.collapsed .follower-item { justify-content:center; }
-        .follower-pane.collapsed .auto-select-toggle { display:none; }
+    .follower-pane.collapsed .auto-select-toggle { display:none; }
+    .follower-pane.collapsed .follower-list { overflow:hidden; }
+    .follower-pane.collapsed .follower-list::-webkit-scrollbar { width:0 !important; height:0 !important; }
         .collapse-btn { background:none; border:none; color:#cfcfd4; cursor:pointer; font-size:18px; line-height:1; padding:4px 6px; border-radius:6px; transition:background .25s,color .25s, transform .25s; }
         .collapse-btn:hover { color:#a970ff; background:#24242a; }
         .follower-pane.collapsed .collapse-btn { transform:rotate(180deg); }
@@ -92,7 +94,9 @@ export function renderHtml(content: string) {
     <div class="top-bar">
         <div class="top-bar-inner">
             <div class="nav-left">
-                <a href="https://twitch.tv" target="_blank" rel="noopener" class="twitch-logo" title="Twitch Home">T</a>
+                <a href="https://twitch.tv" target="_blank" rel="noopener" class="twitch-logo" title="Twitch Home" style="text-decoration:none;">
+                    <img src="/twitch.ico" alt="Twitch" style="width:40px;height:40px;display:block;filter:drop-shadow(0 2px 4px rgba(0,0,0,.4));" />
+                </a>
             </div>
             <div class="nav-center"><h1>MultiTwitch Live Channel Selector</h1></div>
                         <div class="nav-right">
@@ -252,6 +256,7 @@ export function renderHtml(content: string) {
                 autoSelectIdMap = {};
                 if(!userId) return;
                 try {
+                    console.log('[autoselect] loading preferences for user', userId);
                     const resp = await fetch(location.origin + '/api/autoselect?user_id=' + encodeURIComponent(userId));
                     const data = await resp.json();
                     if(data.preferences){
@@ -260,6 +265,7 @@ export function renderHtml(content: string) {
                             autoSelectPreferences.add(uname);
                             autoSelectIdMap[uname] = p.id;
                         });
+                        console.log('[autoselect] loaded', autoSelectPreferences.size, 'preferences');
                     }
                 } catch(e){ console.warn('Failed to load autoselect prefs', e); }
             }
@@ -267,6 +273,7 @@ export function renderHtml(content: string) {
             async function addAutoSelect(streamer){
                 if(!userId) return;
                 try {
+                    console.log('[autoselect] add', streamer);
                     await fetch(location.origin + '/api/autoselect', {
                         method:'POST', headers:{'Content-Type':'application/json'},
                         body: JSON.stringify({ user_id: userId, streamer_username: streamer })
@@ -278,6 +285,7 @@ export function renderHtml(content: string) {
             async function removeAutoSelect(streamer){
                 if(!userId) return;
                 try {
+                    console.log('[autoselect] remove', streamer);
                     await fetch(location.origin + '/api/autoselect?user_id=' + encodeURIComponent(userId) + '&streamer_username=' + encodeURIComponent(streamer), { method:'DELETE' });
                     await loadAutoSelectPreferences();
                     syncFollowerToggleStates();
@@ -285,11 +293,13 @@ export function renderHtml(content: string) {
             }
             async function toggleAutoSelect(streamer){
                 const lower = streamer.toLowerCase();
+                console.log('[autoselect] toggle request', streamer, 'currently has?', autoSelectPreferences.has(lower));
                 if(autoSelectPreferences.has(lower)){
                     await removeAutoSelect(lower);
                 } else {
                     await addAutoSelect(lower);
                 }
+                console.log('[autoselect] toggle complete, now has?', autoSelectPreferences.has(lower));
             }
 
             // ---------------- Followed Channels & Live Streams ----------------
@@ -306,6 +316,13 @@ export function renderHtml(content: string) {
                     cursor = data.pagination && data.pagination.cursor;
                     if(!cursor) break;
                 }
+                // Deduplicate by broadcaster_id
+                const seen = new Set();
+                followedChannels = followedChannels.filter(fc => {
+                    if(seen.has(fc.broadcaster_id)) return false;
+                    seen.add(fc.broadcaster_id); return true;
+                });
+                console.log('[followed] total after dedupe:', followedChannels.length);
                 renderFollowerList();
             }
 
@@ -320,6 +337,13 @@ export function renderHtml(content: string) {
                     const data = await apiHelix('/streams?' + query);
                     if(data.data) liveStreams.push(...data.data);
                 }
+                // Deduplicate streams by user_id
+                const seenStream = new Set();
+                liveStreams = liveStreams.filter(s => {
+                    if(seenStream.has(s.user_id)) return false;
+                    seenStream.add(s.user_id); return true;
+                });
+                console.log('[streams] live count after dedupe:', liveStreams.length);
                 // Enrich with mapping for quick lookups
                 populateGameFilter();
                 applyFilters();
