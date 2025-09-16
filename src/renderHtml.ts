@@ -36,7 +36,7 @@ export function renderHtml(content: string) {
         #generate:hover { background:#b685ff; transform:translateY(-2px) scale(1.02); box-shadow:0 10px 26px -8px rgba(169,112,255,0.75); }
         #generate:disabled { background:#555; cursor:not-allowed; transform:none; box-shadow:none; }
         .last-updated { margin-top:auto; padding-top:20px; font-size:11px; color:#7d7d86; text-align:center; border-top:1px solid #303036; }
-        .results-area { flex:1; background:#0e0e10; padding:20px; overflow-y:auto; display:flex; flex-direction:column; }
+    .results-area { flex:1; background:#0e0e10; padding:20px; overflow-y:auto; display:flex; flex-direction:column; }
         .results-header { display:flex; gap:15px; margin-bottom:20px; align-items:center; }
         .sort-option { background:#24242a; border:1px solid #303036; color:#cfcfd4; padding:8px 16px; border-radius:20px; cursor:pointer; font-size:13px; transition:all .25s; user-select:none; }
         .sort-option:hover { background:#2a2a30; border-color:#a970ff; }
@@ -46,7 +46,12 @@ export function renderHtml(content: string) {
         .channel-list { flex:1; }
         .channel-container { display:flex; align-items:center; gap:14px; margin:8px 0; padding:12px; background:#24242a; border-radius:12px; cursor:pointer; transition:background .25s, transform .18s ease, box-shadow .25s; border:1px solid #303036; }
         .channel-container:hover { background:#2a2a30; box-shadow:0 6px 14px -6px rgba(0,0,0,.6); }
-        .channel-container.selected { background:#a970ff; color:#fff; border-color:#b98bff; }
+    .channel-container.selected { background:#a970ff; color:#fff; border-color:#b98bff; }
+    .channel-container.selected .channel-name { color:#ffffff; }
+    .channel-container.selected .stream-title { color:#fbf7ff; }
+    .channel-container.selected .stream-game { color:#ffffff; }
+    .channel-container.selected .stream-uptime { color:#f2eaff; }
+    .channel-container.selected .viewer-count { color:#ffffff; background:rgba(255,255,255,0.18); }
         .stream-thumbnail { width:160px; height:90px; border-radius:8px; object-fit:cover; box-shadow:0 4px 10px rgba(0,0,0,.35); }
         .channel-info { display:flex; flex-direction:column; justify-content:center; flex:1; }
         .channel-name { font-size:16px; font-weight:600; margin-bottom:4px; }
@@ -110,6 +115,10 @@ export function renderHtml(content: string) {
                                 <div class="profile-avatar"><img id="profileImg" src="" alt="Profile" /></div>
                                 <div class="username-tooltip" id="usernameTooltip">Not signed in</div>
                             </div>
+                            <label title="Append ?darkmode to MultiTwitch links" style="display:flex; align-items:center; gap:6px; font-size:12px; color:#cfcfd4; cursor:pointer;">
+                                <input type="checkbox" id="darkUrlToggle" style="accent-color:#a970ff; cursor:pointer;" />
+                                Dark URL
+                            </label>
                             <button class="logout-btn" id="logoutBtn" style="display:none;">Logout</button>
                         </div>
         </div>
@@ -128,6 +137,20 @@ export function renderHtml(content: string) {
             <div class="filter-section">
                 <label for="gameFilter">Game</label>
                 <select id="gameFilter" class="filter-select"></select>
+            </div>
+            <div class="filter-section">
+                <label for="presetSelect">Saved Presets</label>
+                <select id="presetSelect" class="filter-select"></select>
+                <div style="display:flex; gap:8px; margin-top:8px;">
+                    <input type="text" id="presetName" class="filter-input" placeholder="Preset name..." style="flex:1;" />
+                </div>
+                <div style="display:flex; gap:8px; margin-top:8px;">
+                    <button id="savePresetBtn" class="sort-option" style="flex:1; text-align:center;">Save Preset</button>
+                    <button id="deletePresetBtn" class="sort-option" style="flex:1; text-align:center;">Delete</button>
+                </div>
+                <div style="display:flex; gap:8px; margin-top:8px;">
+                    <button id="setDefaultPresetBtn" class="sort-option" style="flex:1; text-align:center;">Set Default</button>
+                </div>
             </div>
             <div class="last-updated"><div id="lastRefreshed">Loading...</div></div>
         </div>
@@ -176,6 +199,10 @@ export function renderHtml(content: string) {
             let filteredStreams = []; // after filtering/sorting
             let currentSort = { field: null, direction: null }; // direction: 'asc' | 'desc'
             // Background refresh timer removed; refresh only when page shown/focused.
+            let userPrefs = { sort_field: null, sort_direction: null, darkmode_url: true, default_filter_preset_id: null };
+            let filterPresets = [];
+            let activePresetId = null;
+            let activePresetGameName = null; // handle non-live game options
 
             // Utility
             const qs = sel => document.querySelector(sel);
@@ -216,6 +243,13 @@ export function renderHtml(content: string) {
                         await loadAutoSelectPreferences();
                         await loadFollowedChannels();
                         await refreshLiveStreams();
+                        await loadUserPreferences();
+                        await loadFilterPresets();
+                        applyUserPrefsToUI();
+                        // Apply default preset if configured
+                        if (userPrefs.default_filter_preset_id) {
+                            applyPresetById(userPrefs.default_filter_preset_id);
+                        }
                     } else {
                         throw new Error('User not found');
                     }
@@ -359,6 +393,7 @@ export function renderHtml(content: string) {
                 console.log('[streams] live count after dedupe:', liveStreams.length);
                 // Enrich with mapping for quick lookups
                 populateGameFilter();
+                applyAutoSelections();
                 applyFilters();
                 renderFollowerList();
                 updateLastRefreshed();
@@ -382,8 +417,11 @@ export function renderHtml(content: string) {
                 container.dataset.channel = stream.user_login;
                 if(selectedChannels.has(stream.user_login)) container.classList.add('selected');
                 container.addEventListener('click', () => toggleSelection(stream.user_login, container));
-                container.addEventListener('dblclick', () => window.open('https://www.multitwitch.tv/' + stream.user_login + '?darkmode', '_blank'));
-                container.addEventListener('auxclick', (e)=>{ if(e.button===1){ e.preventDefault(); window.open('https://www.multitwitch.tv/' + stream.user_login + '?darkmode', '_blank'); }});
+                container.addEventListener('dblclick', () => {
+                    const dark = userPrefs.darkmode_url ? '?darkmode' : '';
+                    window.open('https://www.multitwitch.tv/' + stream.user_login + dark, '_blank');
+                });
+                container.addEventListener('auxclick', (e)=>{ if(e.button===1){ e.preventDefault(); const dark = userPrefs.darkmode_url ? '?darkmode' : ''; window.open('https://www.multitwitch.tv/' + stream.user_login + dark, '_blank'); }});
 
                 const img = document.createElement('img');
                 img.className='stream-thumbnail';
@@ -434,7 +472,8 @@ export function renderHtml(content: string) {
             $('generate').addEventListener('click', ()=>{
                 if(!selectedChannels.size) return;
                 const channels = Array.from(selectedChannels).join('/');
-                window.open('https://www.multitwitch.tv/' + channels + '?darkmode','_blank');
+                const dark = userPrefs.darkmode_url ? '?darkmode' : '';
+                window.open('https://www.multitwitch.tv/' + channels + dark,'_blank');
             });
             document.addEventListener('keydown', e=>{ if(e.key==='Enter'){ const b=$('generate'); if(!b.disabled) b.click(); }});
 
@@ -442,7 +481,12 @@ export function renderHtml(content: string) {
             function populateGameFilter(){
                 const select = $('gameFilter'); if(!select) return;
                 const prev = select.value;
-                const games = Array.from(new Set(liveStreams.map(function(s){ return s.game_name; }).filter(Boolean))).sort();
+                const gamesSet = new Set(liveStreams.map(function(s){ return s.game_name; }).filter(Boolean));
+                // If a preset refers to a game that's not currently live, include it anyway
+                if (activePresetGameName && activePresetGameName !== '' && !gamesSet.has(activePresetGameName)) {
+                    gamesSet.add(activePresetGameName);
+                }
+                const games = Array.from(gamesSet).sort();
                 let html = '<option value="">All Games</option>';
                 games.forEach(function(g){
                     html += '<option value="' + g.replace(/"/g,'&quot;') + '">' + g + '</option>';
@@ -477,6 +521,8 @@ export function renderHtml(content: string) {
                         opt.classList.add(currentSort.direction === 'asc' ? 'active-asc' : 'active-desc');
                     }
                 });
+                // Persist sort preference
+                saveUserPreferences({ sort_field: currentSort.field, sort_direction: currentSort.direction });
                 applySorting();
             }
 
@@ -568,6 +614,172 @@ export function renderHtml(content: string) {
             }
             document.addEventListener('visibilitychange', ()=>{ if(!document.hidden) refreshLiveStreams(); });
             window.addEventListener('focus', ()=> refreshLiveStreams());
+
+            // ---------------- User Preferences & Presets ----------------
+            async function loadUserPreferences(){
+                if(!userId) return;
+                try{
+                    const resp = await fetch(location.origin + '/api/userprefs?user_id=' + encodeURIComponent(userId));
+                    const data = await resp.json();
+                    userPrefs.sort_field = data.sort_field || null;
+                    userPrefs.sort_direction = data.sort_direction || null;
+                    userPrefs.darkmode_url = (typeof data.darkmode_url === 'number') ? !!data.darkmode_url : (data.darkmode_url !== false);
+                    userPrefs.default_filter_preset_id = data.default_filter_preset_id || null;
+                    console.log('[prefs] loaded', userPrefs);
+                } catch(e){ console.warn('failed to load user prefs', e); }
+            }
+
+            function applyUserPrefsToUI(){
+                // Apply dark URL toggle
+                const darkToggle = $('darkUrlToggle'); if(darkToggle){ darkToggle.checked = !!userPrefs.darkmode_url; }
+                // Apply sort
+                if(userPrefs.sort_field && userPrefs.sort_direction){
+                    currentSort.field = userPrefs.sort_field;
+                    currentSort.direction = userPrefs.sort_direction;
+                    document.querySelectorAll('.sort-option').forEach(opt=>{
+                        opt.classList.remove('active-asc','active-desc');
+                        if(opt.dataset.sort === currentSort.field){
+                            opt.classList.add(currentSort.direction === 'asc' ? 'active-asc' : 'active-desc');
+                        }
+                    });
+                    applySorting();
+                }
+            }
+
+            async function saveUserPreferences(partial){
+                if(!userId) return;
+                try{
+                    const payload = {
+                        user_id: userId,
+                        sort_field: ('sort_field' in partial) ? partial.sort_field : userPrefs.sort_field,
+                        sort_direction: ('sort_direction' in partial) ? partial.sort_direction : userPrefs.sort_direction,
+                        darkmode_url: ('darkmode_url' in partial) ? !!partial.darkmode_url : userPrefs.darkmode_url,
+                        default_filter_preset_id: ('default_filter_preset_id' in partial) ? partial.default_filter_preset_id : userPrefs.default_filter_preset_id,
+                    };
+                    const resp = await fetch(location.origin + '/api/userprefs?user_id=' + encodeURIComponent(userId), {
+                        method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(payload)
+                    });
+                    const data = await resp.json();
+                    userPrefs.sort_field = data.sort_field || null;
+                    userPrefs.sort_direction = data.sort_direction || null;
+                    userPrefs.darkmode_url = (typeof data.darkmode_url === 'number') ? !!data.darkmode_url : (data.darkmode_url !== false);
+                    userPrefs.default_filter_preset_id = data.default_filter_preset_id || null;
+                    console.log('[prefs] saved', userPrefs);
+                } catch(e){ console.warn('failed to save prefs', e); }
+            }
+
+            $('darkUrlToggle')?.addEventListener('change', (e)=>{
+                const checked = !!$('darkUrlToggle').checked;
+                userPrefs.darkmode_url = checked;
+                saveUserPreferences({ darkmode_url: checked });
+            });
+
+            async function loadFilterPresets(){
+                if(!userId) return;
+                try{
+                    const resp = await fetch(location.origin + '/api/filter-presets?user_id=' + encodeURIComponent(userId));
+                    const data = await resp.json();
+                    filterPresets = data.presets || [];
+                    populatePresetSelect();
+                } catch(e){ console.warn('failed to load presets', e); }
+            }
+
+            function populatePresetSelect(){
+                const sel = $('presetSelect'); if(!sel) return;
+                const defId = userPrefs.default_filter_preset_id;
+                let html = '<option value="">-- No preset --</option>';
+                filterPresets.forEach(p => {
+                    const label = p.name + (defId && p.id === defId ? ' (default)' : '');
+                    html += '<option value="' + String(p.id) + '">' + label.replace(/</g,'&lt;') + '</option>';
+                });
+                sel.innerHTML = html;
+                if(activePresetId && Array.from(sel.options).some(o=>o.value===String(activePresetId))){ sel.value = String(activePresetId); }
+            }
+
+            function applyPresetById(id){
+                const preset = filterPresets.find(p => String(p.id) === String(id));
+                if(!preset) return;
+                activePresetId = preset.id;
+                // Apply filters
+                $('streamerFilter').value = preset.streamer_query || '';
+                $('titleFilter').value = preset.title_query || '';
+                activePresetGameName = preset.game_name || null;
+                // Update game filter options to include non-live game if necessary
+                populateGameFilter();
+                if (preset.game_name) {
+                    $('gameFilter').value = preset.game_name;
+                } else {
+                    $('gameFilter').value = '';
+                }
+                applyFilters();
+                populatePresetSelect();
+                // Update preset name input to current preset
+                const nameInput = $('presetName'); if(nameInput) nameInput.value = preset.name || '';
+            }
+
+            $('presetSelect')?.addEventListener('change', ()=>{
+                const val = $('presetSelect').value;
+                if(val){ applyPresetById(val); } else { activePresetId = null; activePresetGameName = null; applyFilters(); }
+            });
+
+            $('savePresetBtn')?.addEventListener('click', async ()=>{
+                if(!userId) return;
+                const name = ($('presetName').value || '').trim();
+                if(!name){ alert('Please enter a preset name.'); return; }
+                const payload = {
+                    user_id: userId,
+                    name: name,
+                    streamer_query: $('streamerFilter').value || null,
+                    title_query: $('titleFilter').value || null,
+                    game_name: $('gameFilter').value || null,
+                };
+                try{
+                    const resp = await fetch(location.origin + '/api/filter-presets?user_id=' + encodeURIComponent(userId), { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(payload) });
+                    const data = await resp.json();
+                    await loadFilterPresets();
+                    activePresetId = data.id;
+                    populatePresetSelect();
+                    if($('presetSelect')) $('presetSelect').value = String(activePresetId);
+                } catch(e){ console.warn('failed to save preset', e); }
+            });
+
+            $('deletePresetBtn')?.addEventListener('click', async ()=>{
+                if(!userId) return;
+                const id = $('presetSelect').value;
+                if(!id){ alert('Select a preset to delete.'); return; }
+                try{
+                    await fetch(location.origin + '/api/filter-presets?user_id=' + encodeURIComponent(userId) + '&id=' + encodeURIComponent(id), { method:'DELETE' });
+                    if (userPrefs.default_filter_preset_id && String(userPrefs.default_filter_preset_id) === String(id)) {
+                        // Clear default if we deleted it
+                        await saveUserPreferences({ default_filter_preset_id: null });
+                    }
+                    activePresetId = null;
+                    await loadFilterPresets();
+                    populatePresetSelect();
+                    $('presetSelect').value = '';
+                } catch(e){ console.warn('failed to delete preset', e); }
+            });
+
+            $('setDefaultPresetBtn')?.addEventListener('click', async ()=>{
+                const id = $('presetSelect').value;
+                if(!id){ alert('Select a preset to set as default.'); return; }
+                await saveUserPreferences({ default_filter_preset_id: Number(id) });
+                populatePresetSelect();
+            });
+
+            // ---------------- Auto-select application ----------------
+            function applyAutoSelections(){
+                if(!autoSelectPreferences || !autoSelectPreferences.size) return;
+                try{
+                    liveStreams.forEach(s => {
+                        const login = (s.user_login || '').toLowerCase();
+                        if(autoSelectPreferences.has(login)){
+                            selectedChannels.add(s.user_login);
+                        }
+                    });
+                } catch(e){ console.warn('applyAutoSelections error', e); }
+                updateGenerateButton();
+            }
 
             // Initial Flow
             parseHashToken();

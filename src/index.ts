@@ -80,6 +80,71 @@ async function handleApi(request: Request, env: Env): Promise<Response> {
     return corsify(json({ error: "Method not allowed" }, { status: 405 }));
   }
 
+  if (path === "/api/userprefs") {
+    const method = request.method.toUpperCase();
+    const userId = url.searchParams.get("user_id") || (await maybeJsonField(request, "user_id"));
+    if (!userId) return corsify(json({ error: "user_id required" }, { status: 400 }));
+    if (method === "GET") {
+      const { results } = await env.DB.prepare("SELECT user_id, sort_field, sort_direction, darkmode_url, default_filter_preset_id FROM user_preferences WHERE user_id = ?")
+        .bind(userId).all();
+      return corsify(json(results[0] || { user_id: userId }));
+    }
+    if (method === "POST") {
+      const body = await safeParseJson(request);
+      const sort_field = (body?.sort_field as string) || null;
+      const sort_direction = (body?.sort_direction as string) || null;
+      const darkmode_url = typeof body?.darkmode_url === 'boolean' ? (body.darkmode_url ? 1 : 0) : (typeof body?.darkmode_url === 'number' ? (body.darkmode_url ? 1 : 0) : null);
+      const default_filter_preset_id = (body?.default_filter_preset_id as number) ?? null;
+      await env.DB.prepare(`INSERT INTO user_preferences(user_id, sort_field, sort_direction, darkmode_url, default_filter_preset_id)
+        VALUES(?, ?, ?, ?, ?)
+        ON CONFLICT(user_id) DO UPDATE SET sort_field=excluded.sort_field, sort_direction=excluded.sort_direction, darkmode_url=excluded.darkmode_url, default_filter_preset_id=excluded.default_filter_preset_id, updated_at=CURRENT_TIMESTAMP`)
+        .bind(userId, sort_field, sort_direction, darkmode_url, default_filter_preset_id).run();
+      const { results } = await env.DB.prepare("SELECT user_id, sort_field, sort_direction, darkmode_url, default_filter_preset_id FROM user_preferences WHERE user_id = ?")
+        .bind(userId).all();
+      return corsify(json(results[0] || { user_id: userId }, { status: 201 }));
+    }
+    if (method === "OPTIONS") return corsify(new Response(null, { headers: CORS_HEADERS }));
+    return corsify(json({ error: "Method not allowed" }, { status: 405 }));
+  }
+
+  if (path.startsWith("/api/filter-presets")) {
+    const method = request.method.toUpperCase();
+    const userId = url.searchParams.get("user_id") || (await maybeJsonField(request, "user_id"));
+    if (!userId) return corsify(json({ error: "user_id required" }, { status: 400 }));
+    if (method === "GET") {
+      const { results } = await env.DB.prepare("SELECT id, name, streamer_query, title_query, game_name, created_at, updated_at FROM filter_presets WHERE user_id = ? ORDER BY name ASC")
+        .bind(userId).all();
+      return corsify(json({ user_id: userId, presets: results }));
+    }
+    if (method === "POST") {
+      const body = await safeParseJson(request);
+      const name = (body?.name as string) || "";
+      if (!name) return corsify(json({ error: "name required" }, { status: 400 }));
+      const streamer_query = (body?.streamer_query as string) || null;
+      const title_query = (body?.title_query as string) || null;
+      const game_name = (body?.game_name as string) || null;
+      await env.DB.prepare(`INSERT INTO filter_presets(user_id, name, streamer_query, title_query, game_name, updated_at)
+        VALUES(?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
+        ON CONFLICT(user_id, name) DO UPDATE SET
+          streamer_query=excluded.streamer_query,
+          title_query=excluded.title_query,
+          game_name=excluded.game_name,
+          updated_at=CURRENT_TIMESTAMP`)
+        .bind(userId, name, streamer_query, title_query, game_name).run();
+      const { results } = await env.DB.prepare("SELECT id, name, streamer_query, title_query, game_name FROM filter_presets WHERE user_id=? AND name=?")
+        .bind(userId, name).all();
+      return corsify(json(results[0], { status: 201 }));
+    }
+    if (method === "DELETE") {
+      const id = url.searchParams.get("id") || String((await maybeJsonField(request, "id")) || "");
+      if (!id) return corsify(json({ error: "id required" }, { status: 400 }));
+      const res = await env.DB.prepare("DELETE FROM filter_presets WHERE user_id = ? AND id = ?").bind(userId, Number(id)).run();
+      return corsify(json({ deleted: res.meta.changes }));
+    }
+    if (method === "OPTIONS") return corsify(new Response(null, { headers: CORS_HEADERS }));
+    return corsify(json({ error: "Method not allowed" }, { status: 405 }));
+  }
+
   if (path === "/api/autoselect/query") {
     // Debug endpoint: pass raw SQL ?sql=SELECT+... (READ-ONLY enforcing basic guard)
     const sql = (url.searchParams.get("sql") || "").trim();
@@ -126,8 +191,13 @@ export default {
 
     if (request.method === "OPTIONS") return handleOptions(request);
 
-    // API namespace
-    if (url.pathname.startsWith("/api/autoselect")) {
+    // Serve favicon via redirect to GitHub Pages asset (replace if you host locally)
+    if (url.pathname === "/favicon.ico" || url.pathname === "/multitwitch.ico") {
+      return Response.redirect("https://blake-goofy.github.io/MultiTwitchSelector/multitwitch.ico", 302);
+    }
+
+    // API namespace (route all /api/* to the handler)
+    if (url.pathname.startsWith("/api/")) {
       try {
         return await handleApi(request, env);
       } catch (err: any) {
