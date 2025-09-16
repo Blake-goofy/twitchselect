@@ -278,13 +278,18 @@ export function renderHtml(content: string) {
                 if(!userId) return;
                 try {
                     console.log('[autoselect] add', streamer);
-                    const resp = await fetch(location.origin + '/api/autoselect', {
+                    const resp = await fetch(location.origin + '/api/autoselect?user_id=' + encodeURIComponent(userId), {
                         method:'POST', headers:{'Content-Type':'application/json'},
                         body: JSON.stringify({ user_id: userId, streamer_username: streamer })
                     });
                     const j = await resp.json();
                     console.log('[autoselect] add response', j);
                     autoSelectPreferences.add(streamer.toLowerCase());
+                    console.log('[autoselect] set size (optimistic)', autoSelectPreferences.size);
+                    // Reconcile actual persisted list (non-blocking)
+                    loadAutoSelectPreferences().then(()=>{
+                        console.log('[autoselect] reconciled size', autoSelectPreferences.size);
+                    });
                     syncFollowerToggleStates();
                 } catch(e){ console.warn('addAutoSelect failed', e); }
             }
@@ -296,6 +301,10 @@ export function renderHtml(content: string) {
                     const j = await resp.json();
                     console.log('[autoselect] remove response', j);
                     autoSelectPreferences.delete(streamer.toLowerCase());
+                    console.log('[autoselect] set size (optimistic)', autoSelectPreferences.size);
+                    loadAutoSelectPreferences().then(()=>{
+                        console.log('[autoselect] reconciled size', autoSelectPreferences.size);
+                    });
                     syncFollowerToggleStates();
                 } catch(e){ console.warn('removeAutoSelect failed', e); }
             }

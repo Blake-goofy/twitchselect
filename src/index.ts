@@ -111,7 +111,9 @@ async function safeParseJson(request: Request): Promise<any | null> {
 
 async function maybeJsonField(request: Request, field: string): Promise<string | null> {
   if (!/^application\/json/i.test(request.headers.get("content-type") || "")) return null;
-  const body = await safeParseJson(request);
+  // Clone to avoid consuming the original body stream before route-specific parsing.
+  const clone = request.clone();
+  const body = await safeParseJson(clone);
   if (body && typeof body === "object" && field in body && typeof (body as any)[field] === "string") {
     return (body as any)[field];
   }
