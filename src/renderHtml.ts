@@ -817,7 +817,8 @@ export function renderHtml(content: string) {
                     menu.innerHTML = '<div class="ctx-item" id="ctxSetDefault"></div><div class="ctx-item" id="ctxUnsetDefault" style="display:none;">Unset default</div><div class="ctx-sep"></div><div class="ctx-item" id="ctxDelete">Delete</div><div class="ctx-sep"></div><div class="ctx-item" id="ctxInspect">Inspect (browser menu)</div>';
                     document.body.appendChild(menu);
                 }
-                (menu as any).currentPresetId = preset.id;
+                // attach context data without TS assertions (inline JS)
+                menu['currentPresetId'] = preset.id;
                 const setItem = document.getElementById('ctxSetDefault');
                 const unsetItem = document.getElementById('ctxUnsetDefault');
                 const deleteItem = document.getElementById('ctxDelete');
