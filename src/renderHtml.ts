@@ -18,6 +18,7 @@ export function renderHtml(content: string) {
         .top-bar { background:#18181b; width:100%; padding:10px 0; margin:0; position:fixed; top:0; left:0; z-index:100; height:60px; }
     .top-bar-inner { display:flex; align-items:center; justify-content:space-between; padding:0 22px; height:100%; }
     .nav-left, .nav-right { display:flex; align-items:center; gap:18px; }
+    .twitch-glitch { width:40px; height:40px; display:block; }
     .profile-wrapper { position:relative; display:flex; align-items:center; gap:10px; }
     .profile-avatar { width:40px; height:40px; border-radius:50%; overflow:hidden; box-shadow:0 0 10px rgba(0,0,0,.3); cursor:default; border:1px solid #303036; }
     .profile-avatar img { width:100%; height:100%; object-fit:cover; display:block; }
@@ -32,7 +33,7 @@ export function renderHtml(content: string) {
         .filter-section label { display:block; margin-bottom:5px; font-weight:600; font-size:13px; color:#cfcfd4; }
         .filter-input, .filter-select { width:100%; padding:8px 12px; background:#24242a; border:1px solid #303036; border-radius:6px; color:#e0e0e0; font-size:14px; }
         .filter-input:focus, .filter-select:focus { outline:none; border-color:#a970ff; }
-        #generate { background:#a970ff; color:#fff; padding:12px 24px; border:none; border-radius:30px; font-size:14px; font-weight:600; cursor:pointer; margin-bottom:30px; transition:background .25s, transform .18s ease, box-shadow .25s; box-shadow:0 6px 18px -6px rgba(169,112,255,0.6); width:100%; }
+    #generate { background:#a970ff; color:#fff; padding:12px 24px; border:none; border-radius:30px; font-size:14px; font-weight:600; cursor:pointer; margin-bottom:30px; transition:background .25s, transform .18s ease, box-shadow .25s; box-shadow:0 6px 18px -6px rgba(169,112,255,0.6); width:100%; }
         #generate:hover { background:#b685ff; transform:translateY(-2px) scale(1.02); box-shadow:0 10px 26px -8px rgba(169,112,255,0.75); }
         #generate:disabled { background:#555; cursor:not-allowed; transform:none; box-shadow:none; }
         .last-updated { margin-top:auto; padding-top:20px; font-size:11px; color:#7d7d86; text-align:center; border-top:1px solid #303036; }
@@ -41,6 +42,7 @@ export function renderHtml(content: string) {
         .sort-option { background:#24242a; border:1px solid #303036; color:#cfcfd4; padding:8px 16px; border-radius:20px; cursor:pointer; font-size:13px; transition:all .25s; user-select:none; }
         .sort-option:hover { background:#2a2a30; border-color:#a970ff; }
     .sort-option.active-asc, .sort-option.active-desc { background:#24242a; color:#cfcfd4; border-color:#a970ff; }
+    .sort-option.active-asc:hover, .sort-option.active-desc:hover { background:#2a2a30; border-color:#a970ff; box-shadow:0 6px 14px -6px rgba(0,0,0,.6); transform:translateY(-2px); }
         .sort-option.active-asc::after { content:" ↑"; }
         .sort-option.active-desc::after { content:" ↓"; }
         .channel-list { flex:1; }
@@ -95,14 +97,15 @@ export function renderHtml(content: string) {
         .filter-pane::-webkit-scrollbar-thumb, .results-area::-webkit-scrollbar-thumb, .follower-list::-webkit-scrollbar-thumb { background:#D9D9D9; border-radius:10px; transition:background .3s; }
         .filter-pane::-webkit-scrollbar-thumb:hover, .results-area::-webkit-scrollbar-thumb:hover, .follower-list::-webkit-scrollbar-thumb:hover { background:#BFBFBF; }
         /* Generate row with star presets */
-        .generate-row { display:flex; align-items:center; gap:10px; margin-bottom:12px; }
+    .generate-row { display:flex; align-items:center; gap:10px; margin-bottom:12px; }
+    .generate-row #generate { height:40px; display:flex; align-items:center; justify-content:center; padding:0 16px; border-radius:10px; margin-bottom:0; width:auto; }
         #presetStarBtn { width:40px; height:40px; border-radius:10px; border:1px solid #303036; background:#24242a; display:flex; align-items:center; justify-content:center; cursor:pointer; transition:transform .18s ease, background .25s, border-color .25s; }
         #presetStarBtn:hover { background:#2a2a30; border-color:#a970ff; transform:translateY(-1px); }
         .star-icon { width:22px; height:22px; display:block; }
         .star-white { fill:#ffffff; filter:drop-shadow(0 2px 4px rgba(0,0,0,.35)); }
         .star-yellow { fill:#FFD54A; filter:drop-shadow(0 2px 4px rgba(0,0,0,.35)); }
         .preset-dropdown { position:relative; }
-        .preset-panel { position:absolute; top:44px; left:0; width:100%; max-width:260px; background:#1b1b1f; border:1px solid #303036; border-radius:10px; box-shadow:0 10px 30px rgba(0,0,0,.5); z-index:200; display:none; }
+    .preset-panel { position:absolute; top:44px; left:0; width:260px; background:#1b1b1f; border:1px solid #303036; border-radius:10px; box-shadow:0 10px 30px rgba(0,0,0,.5); z-index:200; display:none; }
         .preset-panel.open { display:block; }
         .preset-list { max-height:260px; overflow:auto; padding:6px; }
         .preset-item { display:flex; align-items:center; justify-content:space-between; gap:10px; padding:8px 10px; border-radius:8px; cursor:pointer; transition:background .2s; }
@@ -125,11 +128,8 @@ export function renderHtml(content: string) {
         <div class="top-bar-inner">
             <div class="nav-left">
                 <a href="https://twitch.tv" target="_blank" rel="noopener" class="twitch-logo" title="Twitch Home" style="text-decoration:none;">
-                    <svg width="40" height="40" viewBox="0 0 240 240" xmlns="http://www.w3.org/2000/svg" style="display:block;">
-                        <rect width="240" height="240" rx="36" fill="#9146FF"/>
-                        <path fill="#FFF" d="M70 60 50 100v90h60v30h35l30-30h35l40-40V60H70zm145 85-20 20h-45l-30 30v-30H70V80h145v65z"/>
-                        <rect x="140" y="100" width="20" height="40" fill="#FFF"/>
-                        <rect x="105" y="100" width="20" height="40" fill="#FFF"/>
+                    <svg class="twitch-glitch" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+                        <path fill="#9146FF" d="M3.857 0L1.3 3.428v15.43h5.143V24l4.114-5.142h3.858l6.828-6.857V0H3.857zm16.457 9.257l-3.428 3.429h-4.114l-2.571 3.086V12.686H6.457V2.571h13.857v6.686zM16.8 5.143h-1.714v4.114H16.8V5.143zm-4.971 0h-1.713v4.114h1.713V5.143z"/>
                     </svg>
                 </a>
             </div>
@@ -230,6 +230,7 @@ export function renderHtml(content: string) {
             let activePresetId = null;
             let activePresetGameName = null; // handle non-live game options
             let allowNativeContextMenuOnce = false; // for Inspect
+            let lastRefreshAt = 0;
 
             // Utility
             const qs = sel => document.querySelector(sel);
@@ -424,6 +425,7 @@ export function renderHtml(content: string) {
                 applyAutoSelections();
                 applyFilters();
                 renderFollowerList();
+                lastRefreshAt = Date.now();
                 updateLastRefreshed();
             }
 
@@ -645,8 +647,16 @@ export function renderHtml(content: string) {
                 const d = new Date();
                 el.textContent = 'Last refreshed at ' + d.toLocaleTimeString([], {hour:'2-digit', minute:'2-digit', second:'2-digit'});
             }
-            document.addEventListener('visibilitychange', ()=>{ if(!document.hidden) refreshLiveStreams(); });
-            window.addEventListener('focus', ()=> refreshLiveStreams());
+            function maybeRefresh(){
+                const now = Date.now();
+                if(now - lastRefreshAt >= 60_000){
+                    refreshLiveStreams();
+                } else {
+                    // too soon; skip
+                }
+            }
+            document.addEventListener('visibilitychange', ()=>{ if(!document.hidden) maybeRefresh(); });
+            window.addEventListener('focus', ()=> maybeRefresh());
 
             // ---------------- User Preferences & Presets ----------------
             async function loadUserPreferences(){
