@@ -1,6 +1,6 @@
 ![twitchselect](images/twitchselect.png)
 Pick your favorites from the channels you follow and open them in MultiTwitch — fast
-https://twitchselect.blake13blake.workers.dev/
+https://twitchselect.com
 
 ## What this is
 
