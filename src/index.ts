@@ -193,7 +193,9 @@ export default {
 
     // Serve favicon via redirect to GitHub Pages asset (replace if you host locally)
     if (url.pathname === "/favicon.ico" || url.pathname === "/multitwitch.ico") {
-      return Response.redirect("https://blake-goofy.github.io/MultiTwitchSelector/multitwitch.ico", 302);
+      const v = url.searchParams.get("v");
+      const target = "https://blake-goofy.github.io/MultiTwitchSelector/multitwitch.ico" + (v ? `?v=${encodeURIComponent(v)}` : "");
+      return Response.redirect(target, 302);
     }
 
     // API namespace (route all /api/* to the handler)

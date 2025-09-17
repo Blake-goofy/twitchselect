@@ -9,8 +9,8 @@ export function renderHtml(content: string) {
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>MultiTwitch Live Selector</title>
-    <link rel="icon" type="image/x-icon" href="/multitwitch.ico">
-    <link rel="icon" type="image/png" href="/multitwitch.png">
+    <link rel="icon" type="image/x-icon" href="/multitwitch.ico?v=2">
+    <link rel="icon" type="image/png" href="/multitwitch.png?v=2">
     <style>
         * { box-sizing: border-box; }
         body { background-color: #0e0e10; color: #e0e0e0; font-family: 'Arial', sans-serif; margin:0; padding:0; overflow:hidden; }
@@ -18,7 +18,7 @@ export function renderHtml(content: string) {
         .top-bar { background:#18181b; width:100%; padding:10px 0; margin:0; position:fixed; top:0; left:0; z-index:100; height:60px; }
     .top-bar-inner { display:flex; align-items:center; justify-content:space-between; padding:0 22px; height:100%; }
     .nav-left, .nav-right { display:flex; align-items:center; gap:18px; }
-    .twitch-glitch { width:40px; height:40px; display:block; }
+    .twitch-logo-img { height:40px; width:auto; display:block; }
     .profile-wrapper { position:relative; display:flex; align-items:center; gap:10px; }
     .profile-avatar { width:40px; height:40px; border-radius:50%; overflow:hidden; box-shadow:0 0 10px rgba(0,0,0,.3); cursor:default; border:1px solid #303036; }
     .profile-avatar img { width:100%; height:100%; object-fit:cover; display:block; }
@@ -42,7 +42,7 @@ export function renderHtml(content: string) {
         .sort-option { background:#24242a; border:1px solid #303036; color:#cfcfd4; padding:8px 16px; border-radius:20px; cursor:pointer; font-size:13px; transition:all .25s; user-select:none; }
         .sort-option:hover { background:#2a2a30; border-color:#a970ff; }
     .sort-option.active-asc, .sort-option.active-desc { background:#24242a; color:#cfcfd4; border-color:#a970ff; }
-    .sort-option.active-asc:hover, .sort-option.active-desc:hover { background:#2a2a30; border-color:#a970ff; box-shadow:0 6px 14px -6px rgba(0,0,0,.6); transform:translateY(-2px); }
+    .sort-option.active-asc:hover, .sort-option.active-desc:hover { background:#2a2a30; border-color:#a970ff; box-shadow:0 6px 14px -6px rgba(0,0,0,.6); }
         .sort-option.active-asc::after { content:" ↑"; }
         .sort-option.active-desc::after { content:" ↓"; }
         .channel-list { flex:1; }
@@ -98,7 +98,7 @@ export function renderHtml(content: string) {
         .filter-pane::-webkit-scrollbar-thumb:hover, .results-area::-webkit-scrollbar-thumb:hover, .follower-list::-webkit-scrollbar-thumb:hover { background:#BFBFBF; }
         /* Generate row with star presets */
     .generate-row { display:flex; align-items:center; gap:10px; margin-bottom:12px; }
-    .generate-row #generate { height:40px; display:flex; align-items:center; justify-content:center; padding:0 16px; border-radius:10px; margin-bottom:0; width:auto; }
+    .generate-row #generate { height:40px; display:flex; align-items:center; justify-content:center; padding:0 16px; border-radius:10px; margin-bottom:0; width:240px; white-space:nowrap; }
         #presetStarBtn { width:40px; height:40px; border-radius:10px; border:1px solid #303036; background:#24242a; display:flex; align-items:center; justify-content:center; cursor:pointer; transition:transform .18s ease, background .25s, border-color .25s; }
         #presetStarBtn:hover { background:#2a2a30; border-color:#a970ff; transform:translateY(-1px); }
         .star-icon { width:22px; height:22px; display:block; }
@@ -128,17 +128,17 @@ export function renderHtml(content: string) {
         <div class="top-bar-inner">
             <div class="nav-left">
                 <a href="https://twitch.tv" target="_blank" rel="noopener" class="twitch-logo" title="Twitch Home" style="text-decoration:none;">
-                    <svg class="twitch-glitch" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
-                        <path fill="#9146FF" d="M3.857 0L1.3 3.428v15.43h5.143V24l4.114-5.142h3.858l6.828-6.857V0H3.857zm16.457 9.257l-3.428 3.429h-4.114l-2.571 3.086V12.686H6.457V2.571h13.857v6.686zM16.8 5.143h-1.714v4.114H16.8V5.143zm-4.971 0h-1.713v4.114h1.713V5.143z"/>
-                    </svg>
+                    <img src="/twitch.png?v=2" alt="Twitch" class="twitch-logo-img" />
                 </a>
             </div>
             <div class="nav-center"><h1>MultiTwitch Live Channel Selector</h1></div>
                         <div class="nav-right">
-                            <label title="Append ?darkmode to MultiTwitch links" style="display:flex; align-items:center; gap:6px; font-size:12px; color:#cfcfd4; cursor:pointer;">
-                                <input type="checkbox" id="darkUrlToggle" style="accent-color:#a970ff; cursor:pointer;" />
-                                Dark URL
-                            </label>
+                            <div id="navDarkToggle" title="Append ?darkmode to MultiTwitch links" style="display:flex; align-items:center; gap:8px; cursor:pointer;">
+                                <div class="auto-select-toggle" style="margin:0;">
+                                    <div class="toggle-switch" id="darkUrlSwitch"><div class="toggle-slider"></div></div>
+                                </div>
+                                <span style="font-size:12px; color:#cfcfd4; user-select:none;">Dark URL</span>
+                            </div>
                             <div class="profile-wrapper" id="profileWrapper">
                                 <div class="profile-avatar"><img id="profileImg" src="" alt="Profile" /></div>
                                 <div class="username-tooltip" id="usernameTooltip">Not signed in</div>
@@ -164,7 +164,7 @@ export function renderHtml(content: string) {
                         </div>
                     </div>
                 </div>
-                <button id="generate" disabled>Generate MultiTwitch Link</button>
+                <button id="generate" disabled>Select channels</button>
             </div>
             <div class="filter-section">
                 <label for="streamerFilter">Streamer Name</label>
@@ -674,7 +674,7 @@ export function renderHtml(content: string) {
 
             function applyUserPrefsToUI(){
                 // Apply dark URL toggle
-                const darkToggle = $('darkUrlToggle'); if(darkToggle){ darkToggle.checked = !!userPrefs.darkmode_url; }
+                const darkSwitch = $('darkUrlSwitch'); if(darkSwitch){ if(userPrefs.darkmode_url) darkSwitch.classList.add('active'); else darkSwitch.classList.remove('active'); }
                 // Apply sort
                 if(userPrefs.sort_field && userPrefs.sort_direction){
                     currentSort.field = userPrefs.sort_field;
@@ -711,11 +711,16 @@ export function renderHtml(content: string) {
                 } catch(e){ console.warn('failed to save prefs', e); }
             }
 
-            $('darkUrlToggle')?.addEventListener('change', (e)=>{
-                const checked = !!$('darkUrlToggle').checked;
-                userPrefs.darkmode_url = checked;
-                saveUserPreferences({ darkmode_url: checked });
-            });
+            // Dark URL toggle behavior
+            (function(){
+                const wrap = $('navDarkToggle');
+                const sw = $('darkUrlSwitch');
+                wrap?.addEventListener('click', ()=>{
+                    const isActive = sw.classList.toggle('active');
+                    userPrefs.darkmode_url = isActive;
+                    saveUserPreferences({ darkmode_url: isActive });
+                });
+            })();
 
             async function loadFilterPresets(){
                 if(!userId) return;
