@@ -191,10 +191,20 @@ export default {
 
     if (request.method === "OPTIONS") return handleOptions(request);
 
-    // Serve favicon via redirect to GitHub Pages asset (replace if you host locally)
+    // Serve icons/images from GitHub repo raw URLs
     if (url.pathname === "/favicon.ico" || url.pathname === "/multitwitch.ico") {
-      const v = url.searchParams.get("v");
-      const target = "https://blake-goofy.github.io/MultiTwitchSelector/multitwitch.ico" + (v ? `?v=${encodeURIComponent(v)}` : "");
+      const v = url.searchParams.get("v") ? `?v=${encodeURIComponent(url.searchParams.get("v")!)}` : "";
+      const target = `https://raw.githubusercontent.com/Blake-goofy/twitchselect/main/src/multitwitch.ico${v}`;
+      return Response.redirect(target, 302);
+    }
+    if (url.pathname === "/multitwitch.png") {
+      const v = url.searchParams.get("v") ? `?v=${encodeURIComponent(url.searchParams.get("v")!)}` : "";
+      const target = `https://raw.githubusercontent.com/Blake-goofy/twitchselect/main/src/multitwitch.png${v}`;
+      return Response.redirect(target, 302);
+    }
+    if (url.pathname === "/twitch.png") {
+      const v = url.searchParams.get("v") ? `?v=${encodeURIComponent(url.searchParams.get("v")!)}` : "";
+      const target = `https://raw.githubusercontent.com/Blake-goofy/twitchselect/main/src/twitch.png${v}`;
       return Response.redirect(target, 302);
     }
 
