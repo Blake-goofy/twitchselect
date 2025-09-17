@@ -160,7 +160,7 @@ export function renderHtml(content: string) {
                     <img src="/twitch.png?v=2" alt="Twitch" class="twitch-logo-img" />
                 </a>
             </div>
-            <div class="nav-center"><h1>Twitch Select</h1></div>
+            <div class="nav-center"></div>
                         <div class="nav-right">
                             <a href="https://github.com/Blake-goofy/twitchselect#readme" target="_blank" rel="noopener" title="Help" class="help-link">?</a>
                             <div class="profile-wrapper" id="profileWrapper">
@@ -250,7 +250,9 @@ export function renderHtml(content: string) {
 
             // --- Minimal Twitch OAuth client helper (placeholder) ---
             const TWITCH_CLIENT_ID = "8nsznpvw3o37hr4sbfh5gn6wxdymre";
-            const REDIRECT_URI = location.origin + "/"; // adjust if needed
+            const PROD_ORIGIN = 'https://twitchselect.com';
+            const APP_ORIGIN = (location.hostname === 'twitchselect.com') ? PROD_ORIGIN : location.origin;
+            const REDIRECT_URI = APP_ORIGIN + "/"; // prod domain in production, local origin during dev
             let accessToken = localStorage.getItem('twitch_access_token') || null;
             let userData = null;
             let userId = null;
@@ -657,6 +659,16 @@ export function renderHtml(content: string) {
                 window.open('https://www.multitwitch.tv/' + channels + dark,'_blank');
             });
             document.addEventListener('keydown', e=>{ if(e.key==='Enter'){ const b=$('generate'); if(!b.disabled) b.click(); }});
+            // ESC clears all selected
+            document.addEventListener('keydown', (e)=>{
+                if(e.key === 'Escape'){
+                    if(selectedChannels.size){
+                        selectedChannels.clear();
+                        document.querySelectorAll('.channel-container.selected').forEach(function(el){ el.classList.remove('selected'); });
+                        updateGenerateButton();
+                    }
+                }
+            });
             // Ctrl/Cmd + A to select all filtered streams (unless typing in a field)
             document.addEventListener('keydown', (e)=>{
                 const t = e.target;
@@ -881,8 +893,8 @@ export function renderHtml(content: string) {
                     });
                     applySorting();
                 }
-                // Apply card scale CSS var (clamp 0.75..1.5)
-                const scale = Math.max(0.75, Math.min(1.5, Number(userPrefs.card_scale) || 1));
+                // Apply card scale CSS var (clamp 0.7..1.5)
+                const scale = Math.max(0.7, Math.min(1.5, Number(userPrefs.card_scale) || 1));
                 document.documentElement.style.setProperty('--card-scale', String(scale));
             }
 
@@ -926,7 +938,7 @@ export function renderHtml(content: string) {
                 const minus = $('cardScaleMinus');
                 const plus = $('cardScalePlus');
                 function applyScale(next){
-                    const clamped = Math.max(0.75, Math.min(1.5, Math.round(next*100)/100));
+                    const clamped = Math.max(0.7, Math.min(1.5, Math.round(next*100)/100));
                     userPrefs.card_scale = clamped;
                     document.documentElement.style.setProperty('--card-scale', String(clamped));
                     saveUserPreferences({ card_scale: clamped });
