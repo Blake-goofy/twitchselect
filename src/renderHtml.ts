@@ -18,7 +18,9 @@ export function renderHtml(content: string) {
         .top-bar { background:#18181b; width:100%; padding:10px 0; margin:0; position:fixed; top:0; left:0; z-index:100; height:60px; }
     .top-bar-inner { display:flex; align-items:center; justify-content:space-between; padding:0 22px; height:100%; }
     .nav-left, .nav-right { display:flex; align-items:center; gap:18px; }
-    .twitch-logo-img { height:40px; width:auto; display:block; }
+    .twitch-logo { display:inline-flex; align-items:center; }
+    .twitch-logo-img { height:40px; width:auto; display:block; transition: transform .18s ease, box-shadow .25s ease; }
+    .twitch-logo:hover .twitch-logo-img { transform:translateY(-2px) scale(1.02); box-shadow:0 10px 26px -8px rgba(169,112,255,0.45); }
     .profile-wrapper { position:relative; display:flex; align-items:center; gap:10px; }
     .profile-avatar { width:40px; height:40px; border-radius:50%; overflow:hidden; box-shadow:0 0 10px rgba(0,0,0,.3); cursor:default; border:1px solid #303036; }
     .profile-avatar img { width:100%; height:100%; object-fit:cover; display:block; }
@@ -86,6 +88,20 @@ export function renderHtml(content: string) {
     .follower-pane.collapsed .auto-select-toggle { display:none; }
     .follower-pane.collapsed .follower-list { overflow:hidden; }
     .follower-pane.collapsed .follower-list::-webkit-scrollbar { width:0 !important; height:0 !important; }
+    .follower-pane.collapsed .follower-filter-wrap { display:none; }
+    .follower-pane.collapsed .follower-item:hover { background:transparent; }
+    
+    /* Modal overlay for logout */
+    .modal-overlay { position:fixed; inset:0; background:rgba(0,0,0,0.6); display:none; align-items:center; justify-content:center; z-index:1000; }
+    .modal-overlay.open { display:flex; }
+    .modal-card { background:#1b1b1f; border:1px solid #303036; border-radius:12px; padding:18px; width:340px; box-shadow:0 16px 50px rgba(0,0,0,.6); }
+    .modal-title { font-size:16px; font-weight:700; margin:0 0 8px 0; }
+    .modal-text { font-size:13px; color:#cfcfd4; margin-bottom:14px; }
+    .modal-actions { display:flex; gap:10px; justify-content:flex-end; }
+    .btn { padding:8px 14px; border-radius:8px; border:1px solid #3d3d46; background:#2d2d34; color:#e8ddff; cursor:pointer; transition:background .2s, border-color .2s, transform .18s ease; }
+    .btn:hover { background:#3a3842; border-color:#a970ff; transform:translateY(-1px); }
+    .btn-primary { background:#a970ff; border-color:#a970ff; color:#fff; }
+    .btn-primary:hover { background:#b685ff; border-color:#b685ff; }
         .collapse-btn { background:none; border:none; color:#cfcfd4; cursor:pointer; font-size:18px; line-height:1; padding:4px 6px; border-radius:6px; transition:background .25s,color .25s, transform .25s; }
         .collapse-btn:hover { color:#a970ff; background:#24242a; }
         .follower-pane.collapsed .collapse-btn { transform:rotate(180deg); }
@@ -124,6 +140,16 @@ export function renderHtml(content: string) {
     </style>
 </head>
 <body>
+    <div class="modal-overlay" id="logoutModal">
+        <div class="modal-card" role="dialog" aria-modal="true" aria-labelledby="logoutTitle">
+            <h3 class="modal-title" id="logoutTitle">Sign out</h3>
+            <div class="modal-text">To fully sign out, you'll be taken to Twitch to log out there. Continue?</div>
+            <div class="modal-actions">
+                <button class="btn" id="logoutCancel">Cancel</button>
+                <button class="btn btn-primary" id="logoutConfirm">Sign out</button>
+            </div>
+        </div>
+    </div>
     <div class="top-bar">
         <div class="top-bar-inner">
             <div class="nav-left">
@@ -133,12 +159,6 @@ export function renderHtml(content: string) {
             </div>
             <div class="nav-center"><h1>MultiTwitch Live Channel Selector</h1></div>
                         <div class="nav-right">
-                            <div id="navDarkToggle" title="Append ?darkmode to MultiTwitch links" style="display:flex; align-items:center; gap:8px; cursor:pointer;">
-                                <div class="auto-select-toggle" style="margin:0;">
-                                    <div class="toggle-switch" id="darkUrlSwitch"><div class="toggle-slider"></div></div>
-                                </div>
-                                <span style="font-size:12px; color:#cfcfd4; user-select:none;">Dark URL</span>
-                            </div>
                             <div class="profile-wrapper" id="profileWrapper">
                                 <div class="profile-avatar"><img id="profileImg" src="" alt="Profile" /></div>
                                 <div class="username-tooltip" id="usernameTooltip">Not signed in</div>
@@ -186,6 +206,15 @@ export function renderHtml(content: string) {
                 <div class="sort-option" data-sort="viewers">Viewers</div>
                 <div class="sort-option" data-sort="alphabetical">Channel Name</div>
                 <div class="sort-option" data-sort="uptime">Uptime</div>
+                <div style="margin-left:auto; display:flex; align-items:center; gap:12px;">
+                    <a href="https://github.com/Blake-goofy/twitchselect#readme" target="_blank" rel="noopener" title="Help" class="sort-option" style="padding:6px 10px; border-radius:50%; width:30px; height:30px; display:flex; align-items:center; justify-content:center;">?</a>
+                    <div id="navDarkToggle" title="Append ?darkmode to MultiTwitch links" style="display:flex; align-items:center; gap:8px; cursor:pointer;">
+                        <div class="auto-select-toggle" style="margin:0;">
+                            <div class="toggle-switch" id="darkUrlSwitch"><div class="toggle-slider"></div></div>
+                        </div>
+                        <span style="font-size:12px; color:#cfcfd4; user-select:none;">Dark URL</span>
+                    </div>
+                </div>
             </div>
             <div class="channel-list" id="channelList"></div>
         </div>
@@ -313,7 +342,22 @@ export function renderHtml(content: string) {
                 // no background timer to clear
                 if(!auto) startAuth();
             }
-            $('logoutBtn').addEventListener('click', () => logout(false));
+            // Modal logout flow
+            (function(){
+                const btn = $('logoutBtn');
+                const modal = $('logoutModal');
+                const cancel = $('logoutCancel');
+                const confirm = $('logoutConfirm');
+                if(btn){ btn.addEventListener('click', ()=>{ modal.classList.add('open'); }); }
+                if(cancel){ cancel.addEventListener('click', ()=> modal.classList.remove('open')); }
+                if(modal){ modal.addEventListener('click', (e)=>{ if(e.target === modal) modal.classList.remove('open'); }); }
+                if(confirm){ confirm.addEventListener('click', ()=>{
+                    modal.classList.remove('open');
+                    // Open Twitch logout, then return to app
+                    const tw = window.open('https://www.twitch.tv/logout', '_blank');
+                    setTimeout(()=>{ logout(false); }, 200);
+                }); }
+            })();
 
             // ---------------- Autoselect API ----------------
             const WORKER_BASE = location.origin; // if different domain, set explicitly
@@ -448,8 +492,15 @@ export function renderHtml(content: string) {
                 if(selectedChannels.has(stream.user_login)) container.classList.add('selected');
                 container.addEventListener('click', () => toggleSelection(stream.user_login, container));
                 container.addEventListener('dblclick', () => {
+                    const login = stream.user_login;
+                    if(selectedChannels.has(login)){
+                        // Visual feedback without opening
+                        selectedChannels.delete(login); container.classList.remove('selected'); updateGenerateButton();
+                        setTimeout(()=>{ selectedChannels.add(login); container.classList.add('selected'); updateGenerateButton(); }, 0);
+                        return;
+                    }
                     const dark = userPrefs.darkmode_url ? '?darkmode' : '';
-                    window.open('https://www.multitwitch.tv/' + stream.user_login + dark, '_blank');
+                    window.open('https://www.multitwitch.tv/' + login + dark, '_blank');
                 });
                 container.addEventListener('auxclick', (e)=>{ if(e.button===1){ e.preventDefault(); const dark = userPrefs.darkmode_url ? '?darkmode' : ''; window.open('https://www.multitwitch.tv/' + stream.user_login + dark, '_blank'); }});
                 container.addEventListener('contextmenu', (e)=>{
@@ -501,7 +552,7 @@ export function renderHtml(content: string) {
             function updateGenerateButton(){
                 const btn = $('generate');
                 btn.disabled = selectedChannels.size === 0;
-                btn.textContent = selectedChannels.size ? 'Open ' + selectedChannels.size + ' Stream' + (selectedChannels.size>1?'s':'') : 'Generate MultiTwitch Link';
+                btn.textContent = selectedChannels.size ? 'Open ' + selectedChannels.size + ' Stream' + (selectedChannels.size>1?'s':'') : 'Open MultiTwitch Link';
             }
 
             $('generate').addEventListener('click', ()=>{
@@ -578,7 +629,10 @@ export function renderHtml(content: string) {
             $('streamerFilter').addEventListener('input', applyFilters);
             $('titleFilter').addEventListener('input', applyFilters);
             $('gameFilter').addEventListener('change', applyFilters);
-            document.querySelectorAll('.sort-option').forEach(opt=> opt.addEventListener('click', ()=> setSort(opt.dataset.sort)));
+            document.querySelectorAll('.sort-option[data-sort]').forEach(opt=> opt.addEventListener('click', ()=>{
+                const sort = (opt as any).dataset ? (opt as any).dataset.sort : (opt.getAttribute && opt.getAttribute('data-sort'));
+                setSort(sort);
+            }));
 
             // ---------------- Follower Pane ----------------
             function renderFollowerList(){
@@ -593,7 +647,12 @@ export function renderHtml(content: string) {
                 const liveLoginSet = new Set(liveStreams.map(s=>s.user_login.toLowerCase()));
                 const sorted = [...followedChannels]
                     .filter(ch => !filterValue || ch.broadcaster_login.toLowerCase().includes(filterValue))
-                    .sort((a,b)=> a.broadcaster_login.localeCompare(b.broadcaster_login));
+                    .sort((a,b)=>{
+                        const aLive = liveLoginSet.has(a.broadcaster_login.toLowerCase()) ? 0 : 1;
+                        const bLive = liveLoginSet.has(b.broadcaster_login.toLowerCase()) ? 0 : 1;
+                        if(aLive !== bLive) return aLive - bLive;
+                        return a.broadcaster_login.localeCompare(b.broadcaster_login);
+                    });
                 sorted.forEach(ch => {
                     const item = document.createElement('div'); item.className='follower-item';
                     const liveDot = document.createElement('div'); liveDot.className='live-indicator ' + (liveLoginSet.has(ch.broadcaster_login.toLowerCase()) ? '' : 'offline');
@@ -627,10 +686,20 @@ export function renderHtml(content: string) {
                 });
             }
 
+            // Initialize persisted collapsed state
+            (function(){
+                try{
+                    if(localStorage.getItem('followerPaneCollapsed') === '1'){
+                        $('followerPane').classList.add('collapsed');
+                    }
+                } catch(e){}
+            })();
+
             // Collapse follower pane
             $('collapseBtn').addEventListener('click', ()=>{
                 const pane = $('followerPane');
                 pane.classList.toggle('collapsed');
+                try{ localStorage.setItem('followerPaneCollapsed', pane.classList.contains('collapsed') ? '1' : '0'); }catch(e){}
                 // Keep arrow direction consistent: rotate via CSS; text stays constant
             });
 
@@ -797,9 +866,12 @@ export function renderHtml(content: string) {
             document.addEventListener('click', (e)=>{
                 const panel = $('presetPanel'); if(!panel) return;
                 if(panel.classList.contains('open')){
-                    // Close when clicking outside
+                    // Close when clicking outside, but keep open on context menus
                     const dropdown = $('presetDropdown');
-                    if(dropdown && !dropdown.contains(e.target)){ panel.classList.remove('open'); }
+                    const el = e.target as any;
+                    const inDropdown = dropdown ? dropdown.contains(el) : false;
+                    const inCtx = !!(el && typeof el.closest === 'function' && el.closest('.ctx-menu'));
+                    if(!inDropdown && !inCtx){ panel.classList.remove('open'); }
                 }
                 hideAnyContextMenus();
             });
@@ -832,6 +904,7 @@ export function renderHtml(content: string) {
                     menu.innerHTML = '<div class="ctx-item" id="ctxSetDefault"></div><div class="ctx-item" id="ctxUnsetDefault" style="display:none;">Unset default</div><div class="ctx-sep"></div><div class="ctx-item" id="ctxDelete">Delete</div><div class="ctx-sep"></div><div class="ctx-item" id="ctxInspect">Inspect (browser menu)</div>';
                     document.body.appendChild(menu);
                 }
+                if(menu.classList.contains('open') && menu['currentPresetId'] === preset.id){ menu.classList.remove('open'); return; }
                 // attach context data without TS assertions (inline JS)
                 menu['currentPresetId'] = preset.id;
                 const setItem = document.getElementById('ctxSetDefault');
@@ -842,9 +915,10 @@ export function renderHtml(content: string) {
                     setItem.style.display = 'none'; unsetItem.style.display = 'block';
                 } else { setItem.style.display = 'block'; setItem.textContent = 'Set default'; unsetItem.style.display = 'none'; }
                 menu.style.left = x + 'px'; menu.style.top = y + 'px'; menu.classList.add('open');
-                setItem.onclick = async ()=>{ await saveUserPreferences({ default_filter_preset_id: Number(preset.id) }); renderPresetList(); updateStarIcon(); hideAnyContextMenus(); };
-                unsetItem.onclick = async ()=>{ await saveUserPreferences({ default_filter_preset_id: null }); renderPresetList(); updateStarIcon(); hideAnyContextMenus(); };
-                deleteItem.onclick = async ()=>{
+                setItem.onclick = async (ev)=>{ ev.stopPropagation(); await saveUserPreferences({ default_filter_preset_id: Number(preset.id) }); renderPresetList(); updateStarIcon(); hideAnyContextMenus(); };
+                unsetItem.onclick = async (ev)=>{ ev.stopPropagation(); await saveUserPreferences({ default_filter_preset_id: null }); renderPresetList(); updateStarIcon(); hideAnyContextMenus(); };
+                deleteItem.onclick = async (ev)=>{
+                    ev.stopPropagation();
                     try{
                         await fetch(location.origin + '/api/filter-presets?user_id=' + encodeURIComponent(userId) + '&id=' + encodeURIComponent(preset.id), { method:'DELETE' });
                         if (userPrefs.default_filter_preset_id && String(userPrefs.default_filter_preset_id) === String(preset.id)) {
@@ -857,7 +931,7 @@ export function renderHtml(content: string) {
                 };
                 // Can't programmatically open DevTools; instruct user to Shift+Right-Click for browser menu
                 if (inspectItem) {
-                    inspectItem.onclick = ()=>{ hideAnyContextMenus(); allowNativeContextMenuOnce = true; };
+                    inspectItem.onclick = (ev)=>{ ev.stopPropagation(); hideAnyContextMenus(); allowNativeContextMenuOnce = true; };
                 }
             }
 
@@ -868,11 +942,12 @@ export function renderHtml(content: string) {
                     menu.innerHTML = '<div class="ctx-item" id="chOpen">Open in new tab</div><div class="ctx-sep"></div><div class="ctx-item" id="chInspect">Inspect (browser menu)</div>';
                     document.body.appendChild(menu);
                 }
+                if(menu.classList.contains('open')){ menu.classList.remove('open'); return; }
                 menu.style.left = x + 'px'; menu.style.top = y + 'px'; menu.classList.add('open');
                 const openItem = document.getElementById('chOpen');
                 const inspItem = document.getElementById('chInspect');
-                openItem.onclick = ()=>{ const dark = userPrefs.darkmode_url ? '?darkmode' : ''; window.open('https://www.multitwitch.tv/' + login + dark, '_blank'); hideAnyContextMenus(); };
-                inspItem.onclick = ()=>{ hideAnyContextMenus(); allowNativeContextMenuOnce = true; };
+                openItem.onclick = (ev)=>{ ev.stopPropagation(); const dark = userPrefs.darkmode_url ? '?darkmode' : ''; window.open('https://www.multitwitch.tv/' + login + dark, '_blank'); hideAnyContextMenus(); };
+                inspItem.onclick = (ev)=>{ ev.stopPropagation(); hideAnyContextMenus(); allowNativeContextMenuOnce = true; };
             }
 
             function hideAnyContextMenus(){
