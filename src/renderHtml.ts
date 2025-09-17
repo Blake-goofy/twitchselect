@@ -160,7 +160,7 @@ export function renderHtml(content: string) {
                     <img src="/twitch.png?v=2" alt="Twitch" class="twitch-logo-img" />
                 </a>
             </div>
-            <div class="nav-center"><h1>MultiTwitch Live Channel Selector</h1></div>
+            <div class="nav-center"><h1>Twitch Select</h1></div>
                         <div class="nav-right">
                             <a href="https://github.com/Blake-goofy/twitchselect#readme" target="_blank" rel="noopener" title="Help" class="help-link">?</a>
                             <div class="profile-wrapper" id="profileWrapper">
@@ -272,6 +272,7 @@ export function renderHtml(content: string) {
             let lastRefreshAt = 0;
             let lastLiveLoginSet = null; // track last live set for selective auto-select
             let isDragSelecting = false; // shift-drag multi-select
+            let dragSelectMode = 'add'; // 'add' or 'remove'
 
             // Utility
             const qs = sel => document.querySelector(sel);
@@ -517,20 +518,36 @@ export function renderHtml(content: string) {
                 container.addEventListener('mousedown', (e)=>{
                     if(e.button === 0 && e.shiftKey){
                         isDragSelecting = true;
-                        if(!selectedChannels.has(stream.user_login)){
+                        // Determine mode by the starting card
+                        if(selectedChannels.has(stream.user_login)){
+                            dragSelectMode = 'remove';
+                            // immediately remove starting card
+                            selectedChannels.delete(stream.user_login);
+                            container.classList.remove('selected');
+                        } else {
+                            dragSelectMode = 'add';
+                            // immediately add starting card
                             selectedChannels.add(stream.user_login);
                             container.classList.add('selected');
-                            updateGenerateButton();
                         }
+                        updateGenerateButton();
                         e.preventDefault();
                     }
                 });
                 container.addEventListener('mouseenter', ()=>{
                     if(isDragSelecting){
-                        if(!selectedChannels.has(stream.user_login)){
-                            selectedChannels.add(stream.user_login);
-                            container.classList.add('selected');
-                            updateGenerateButton();
+                        if(dragSelectMode === 'add'){
+                            if(!selectedChannels.has(stream.user_login)){
+                                selectedChannels.add(stream.user_login);
+                                container.classList.add('selected');
+                                updateGenerateButton();
+                            }
+                        } else if(dragSelectMode === 'remove'){
+                            if(selectedChannels.has(stream.user_login)){
+                                selectedChannels.delete(stream.user_login);
+                                container.classList.remove('selected');
+                                updateGenerateButton();
+                            }
                         }
                     }
                 });
@@ -647,17 +664,27 @@ export function renderHtml(content: string) {
                 const isFormField = tag === 'input' || tag === 'textarea' || (t && t.isContentEditable);
                 if(!isFormField && (e.ctrlKey || e.metaKey) && (e.key || '').toLowerCase() === 'a'){
                     e.preventDefault();
-                    filteredStreams.forEach(s=> selectedChannels.add(s.user_login));
-                    // Reflect in UI
-                    filteredStreams.forEach(s=>{
-                        const card = document.querySelector('.channel-container[data-channel="' + s.user_login + '"]');
-                        if(card) card.classList.add('selected');
-                    });
+                    const allSelected = filteredStreams.length > 0 && filteredStreams.every(function(s){ return selectedChannels.has(s.user_login); });
+                    if(allSelected){
+                        // Deselect all filtered
+                        filteredStreams.forEach(function(s){ selectedChannels.delete(s.user_login); });
+                        filteredStreams.forEach(function(s){
+                            const card = document.querySelector('.channel-container[data-channel="' + s.user_login + '"]');
+                            if(card) card.classList.remove('selected');
+                        });
+                    } else {
+                        // Select all filtered
+                        filteredStreams.forEach(function(s){ selectedChannels.add(s.user_login); });
+                        filteredStreams.forEach(function(s){
+                            const card = document.querySelector('.channel-container[data-channel="' + s.user_login + '"]');
+                            if(card) card.classList.add('selected');
+                        });
+                    }
                     updateGenerateButton();
                 }
             });
             // End drag-select on mouseup anywhere
-            document.addEventListener('mouseup', ()=>{ if(isDragSelecting) isDragSelecting = false; });
+            document.addEventListener('mouseup', ()=>{ if(isDragSelecting){ isDragSelecting = false; dragSelectMode = 'add'; } });
 
             // ---------------- Filters & Sorting ----------------
             function populateGameFilter(){

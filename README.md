@@ -1,11 +1,6 @@
-<div align="center">
-
-	<img src="./image/twitchselect.png" alt="TwitchSelect" width="720" />
-
-	<h1 style="margin: 8px 0 0; font-weight: 800;">MultiTwitch Live Channel Selector</h1>
-	<p style="color: #8d8d96; margin: 6px 0 0;">Pick your favorites from the channels you follow and open them in MultiTwitch — fast.</p>
-
-</div>
+![twitchselect](images/twitchselect.png)
+Pick your favorites from the channels you follow and open them in MultiTwitch — fast
+https://twitchselect.blake13blake.workers.dev/
 
 ## What this is
 
