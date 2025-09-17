@@ -630,7 +630,7 @@ export function renderHtml(content: string) {
             $('titleFilter').addEventListener('input', applyFilters);
             $('gameFilter').addEventListener('change', applyFilters);
             document.querySelectorAll('.sort-option[data-sort]').forEach(opt=> opt.addEventListener('click', ()=>{
-                const el = opt as Element;
+                const el = opt;
                 const sort = (el instanceof HTMLElement && el.dataset) ? el.dataset.sort : (el.getAttribute && el.getAttribute('data-sort'));
                 setSort(sort);
             }));
@@ -869,9 +869,9 @@ export function renderHtml(content: string) {
                 if(panel.classList.contains('open')){
                     // Close when clicking outside, but keep open on context menus
                     const dropdown = $('presetDropdown');
-                    const el = e.target as Element;
-                    const inDropdown = dropdown ? dropdown.contains(el) : false;
-                    const inCtx = !!(el && typeof el.closest === 'function' && el.closest('.ctx-menu'));
+                    const target = e.target;
+                    const inDropdown = dropdown ? (target instanceof Node && dropdown.contains(target)) : false;
+                    const inCtx = (target instanceof Element) && !!target.closest('.ctx-menu');
                     if(!inDropdown && !inCtx){ panel.classList.remove('open'); }
                 }
                 hideAnyContextMenus();
