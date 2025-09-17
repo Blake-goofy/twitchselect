@@ -13,14 +13,15 @@ export function renderHtml(content: string) {
     <link rel="icon" type="image/png" href="/multitwitch.png?v=2">
     <style>
         * { box-sizing: border-box; }
-        body { background-color: #0e0e10; color: #e0e0e0; font-family: 'Arial', sans-serif; margin:0; padding:0; overflow:hidden; }
+    :root { --card-scale: 1; }
+    body { background-color: #0e0e10; color: #e0e0e0; font-family: 'Arial', sans-serif; margin:0; padding:0; overflow:hidden; }
         h1 { font-size:28px; margin:0; font-weight:700; letter-spacing:.5px; color:#ffffff; font-family:'Segoe UI', Arial, sans-serif; }
         .top-bar { background:#18181b; width:100%; padding:10px 0; margin:0; position:fixed; top:0; left:0; z-index:100; height:60px; }
     .top-bar-inner { display:flex; align-items:center; justify-content:space-between; padding:0 22px; height:100%; }
     .nav-left, .nav-right { display:flex; align-items:center; gap:18px; }
     .twitch-logo { display:inline-flex; align-items:center; }
-    .twitch-logo-img { height:40px; width:auto; display:block; transition: transform .18s ease, box-shadow .25s ease; }
-    .twitch-logo:hover .twitch-logo-img { transform:translateY(-2px) scale(1.02); box-shadow:0 10px 26px -8px rgba(169,112,255,0.45); }
+    .twitch-logo-img { height:40px; width:auto; display:block; transition: transform .18s ease; }
+    .twitch-logo:hover .twitch-logo-img { transform:translateY(-2px) scale(1.02); }
     .profile-wrapper { position:relative; display:flex; align-items:center; gap:10px; }
     .profile-avatar { width:40px; height:40px; border-radius:50%; overflow:hidden; box-shadow:0 0 10px rgba(0,0,0,.3); cursor:default; border:1px solid #303036; }
     .profile-avatar img { width:100%; height:100%; object-fit:cover; display:block; }
@@ -48,7 +49,7 @@ export function renderHtml(content: string) {
         .sort-option.active-asc::after { content:" ↑"; }
         .sort-option.active-desc::after { content:" ↓"; }
         .channel-list { flex:1; }
-        .channel-container { display:flex; align-items:center; gap:14px; margin:8px 0; padding:12px; background:#24242a; border-radius:12px; cursor:pointer; transition:background .25s, transform .18s ease, box-shadow .25s; border:1px solid #303036; }
+    .channel-container { display:flex; align-items:center; gap:calc(14px * var(--card-scale)); margin:8px 0; padding:calc(12px * var(--card-scale)); background:#24242a; border-radius:12px; cursor:pointer; transition:background .25s, transform .18s ease, box-shadow .25s; border:1px solid #303036; }
         .channel-container:hover { background:#2a2a30; box-shadow:0 6px 14px -6px rgba(0,0,0,.6); }
     .channel-container.selected { background:#a970ff; color:#fff; border-color:#b98bff; }
     .channel-container.selected .channel-name { color:#ffffff; }
@@ -56,13 +57,13 @@ export function renderHtml(content: string) {
     .channel-container.selected .stream-game { color:#ffffff; }
     .channel-container.selected .stream-uptime { color:#f2eaff; }
     .channel-container.selected .viewer-count { color:#ffffff; background:rgba(255,255,255,0.18); }
-        .stream-thumbnail { width:160px; height:90px; border-radius:8px; object-fit:cover; box-shadow:0 4px 10px rgba(0,0,0,.35); }
+    .stream-thumbnail { width:calc(160px * var(--card-scale)); height:calc(90px * var(--card-scale)); border-radius:8px; object-fit:cover; box-shadow:0 4px 10px rgba(0,0,0,.35); }
         .channel-info { display:flex; flex-direction:column; justify-content:center; flex:1; }
-        .channel-name { font-size:16px; font-weight:600; margin-bottom:4px; }
-        .stream-title { font-size:13px; color:#cfcfd4; margin:2px 0; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:500px; }
-        .stream-game { font-size:12px; color:#a970ff; margin:2px 0; font-weight:500; }
-        .stream-uptime { font-size:11px; color:#8d8d96; margin:2px 0; }
-        .viewer-count { font-size:14px; color:#ff6b6b; font-weight:600; margin-left:auto; padding:4px 8px; background:rgba(255,107,107,0.1); border-radius:12px; }
+    .channel-name { font-size:calc(16px * var(--card-scale)); font-weight:600; margin-bottom:4px; }
+    .stream-title { font-size:calc(13px * var(--card-scale)); color:#cfcfd4; margin:2px 0; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:calc(500px * var(--card-scale)); }
+    .stream-game { font-size:calc(12px * var(--card-scale)); color:#a970ff; margin:2px 0; font-weight:500; }
+    .stream-uptime { font-size:calc(11px * var(--card-scale)); color:#8d8d96; margin:2px 0; }
+    .viewer-count { font-size:calc(14px * var(--card-scale)); color:#ff6b6b; font-weight:600; margin-left:auto; padding:calc(4px * var(--card-scale)) calc(8px * var(--card-scale)); background:rgba(255,107,107,0.1); border-radius:12px; }
     .follower-pane { width:250px; background:#1b1b1f; border-left:1px solid #303036; transition:width .3s ease; overflow:hidden; }
         .follower-pane.collapsed { width:40px; }
         .follower-header { padding:20px 20px 10px 20px; border-bottom:1px solid #303036; display:flex; justify-content:space-between; align-items:center; }
@@ -132,18 +133,20 @@ export function renderHtml(content: string) {
         .preset-footer { padding:8px; border-top:1px solid #303036; display:flex; gap:8px; }
         #newPresetName { flex:1; padding:6px 10px; background:#24242a; border:1px solid #303036; border-radius:8px; color:#e0e0e0; }
         #addPresetBtn { background:#a970ff; color:#fff; border:none; border-radius:8px; padding:6px 10px; cursor:pointer; }
-        .ctx-menu { position:absolute; background:#1f1f24; border:1px solid #303036; border-radius:8px; box-shadow:0 10px 30px rgba(0,0,0,.5); z-index:400; display:none; min-width:180px; }
+    .ctx-menu { position:absolute; background:#1f1f24; border:1px solid #303036; border-radius:8px; box-shadow:0 10px 30px rgba(0,0,0,.5); z-index:400; display:none; min-width:180px; overflow:hidden; }
         .ctx-menu.open { display:block; }
         .ctx-item { padding:8px 12px; color:#ddd; cursor:pointer; font-size:13px; }
         .ctx-item:hover { background:#2a2a30; }
         .ctx-sep { height:1px; background:#303036; margin:4px 0; }
+    .help-link { text-decoration:none; color:#cfcfd4; font-weight:600; font-size:16px; display:inline-flex; align-items:center; justify-content:center; width:26px; height:26px; border-radius:50%; border:1px solid #303036; background:#24242a; transition:transform .18s ease, background .25s, border-color .25s; }
+    .help-link:hover { color:#fff; background:#2a2a30; border-color:#a970ff; transform:translateY(-1px); }
     </style>
 </head>
 <body>
     <div class="modal-overlay" id="logoutModal">
         <div class="modal-card" role="dialog" aria-modal="true" aria-labelledby="logoutTitle">
             <h3 class="modal-title" id="logoutTitle">Sign out</h3>
-            <div class="modal-text">To fully sign out, you'll be taken to Twitch to log out there. Continue?</div>
+            <div class="modal-text">To fully sign out, you'll be taken to Twitch to log out there.</div>
             <div class="modal-actions">
                 <button class="btn" id="logoutCancel">Cancel</button>
                 <button class="btn btn-primary" id="logoutConfirm">Sign out</button>
@@ -159,6 +162,7 @@ export function renderHtml(content: string) {
             </div>
             <div class="nav-center"><h1>MultiTwitch Live Channel Selector</h1></div>
                         <div class="nav-right">
+                            <a href="https://github.com/Blake-goofy/twitchselect#readme" target="_blank" rel="noopener" title="Help" class="help-link">?</a>
                             <div class="profile-wrapper" id="profileWrapper">
                                 <div class="profile-avatar"><img id="profileImg" src="" alt="Profile" /></div>
                                 <div class="username-tooltip" id="usernameTooltip">Not signed in</div>
@@ -207,12 +211,18 @@ export function renderHtml(content: string) {
                 <div class="sort-option" data-sort="alphabetical">Channel Name</div>
                 <div class="sort-option" data-sort="uptime">Uptime</div>
                 <div style="margin-left:auto; display:flex; align-items:center; gap:12px;">
-                    <a href="https://github.com/Blake-goofy/twitchselect#readme" target="_blank" rel="noopener" title="Help" class="sort-option" style="padding:6px 10px; border-radius:50%; width:30px; height:30px; display:flex; align-items:center; justify-content:center;">?</a>
                     <div id="navDarkToggle" title="Append ?darkmode to MultiTwitch links" style="display:flex; align-items:center; gap:8px; cursor:pointer;">
                         <div class="auto-select-toggle" style="margin:0;">
                             <div class="toggle-switch" id="darkUrlSwitch"><div class="toggle-slider"></div></div>
                         </div>
                         <span style="font-size:12px; color:#cfcfd4; user-select:none;">Dark URL</span>
+                    </div>
+                    <div id="cardScaleControl" title="Resize cards" style="display:flex; align-items:center;">
+                        <div id="cardScaleBox" style="display:flex; border:1px solid #303036; background:#24242a; border-radius:10px; overflow:hidden;">
+                            <button id="cardScaleMinus" style="width:30px; height:26px; background:none; color:#cfcfd4; border:none; cursor:pointer;">−</button>
+                            <div style="width:1px; background:#303036;"></div>
+                            <button id="cardScalePlus" style="width:30px; height:26px; background:none; color:#cfcfd4; border:none; cursor:pointer;">+</button>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -254,12 +264,14 @@ export function renderHtml(content: string) {
             let filteredStreams = []; // after filtering/sorting
             let currentSort = { field: null, direction: null }; // direction: 'asc' | 'desc'
             // Background refresh timer removed; refresh only when page shown/focused.
-            let userPrefs = { sort_field: null, sort_direction: null, darkmode_url: true, default_filter_preset_id: null };
+            let userPrefs = { sort_field: null, sort_direction: null, darkmode_url: true, default_filter_preset_id: null, card_scale: 1 };
             let filterPresets = [];
             let activePresetId = null;
             let activePresetGameName = null; // handle non-live game options
             let allowNativeContextMenuOnce = false; // for Inspect
             let lastRefreshAt = 0;
+            let lastLiveLoginSet = null; // track last live set for selective auto-select
+            let isDragSelecting = false; // shift-drag multi-select
 
             // Utility
             const qs = sel => document.querySelector(sel);
@@ -464,12 +476,20 @@ export function renderHtml(content: string) {
                     seenStream.add(s.user_id); return true;
                 });
                 console.log('[streams] live count after dedupe:', liveStreams.length);
+                const newLiveSet = new Set(liveStreams.map(function(s){ return (s.user_login||'').toLowerCase(); }));
                 // Enrich with mapping for quick lookups
                 populateGameFilter();
-                applyAutoSelections();
+                if(lastLiveLoginSet === null){
+                    applyAutoSelections();
+                } else {
+                    const newlyLive = new Set();
+                    newLiveSet.forEach(function(login){ if(!lastLiveLoginSet.has(login)) newlyLive.add(login); });
+                    applyAutoSelections(newlyLive);
+                }
                 applyFilters();
                 renderFollowerList();
                 lastRefreshAt = Date.now();
+                lastLiveLoginSet = newLiveSet;
                 updateLastRefreshed();
             }
 
@@ -485,12 +505,35 @@ export function renderHtml(content: string) {
             }
             function formatViewers(v){ if(v>=1000) return (v/1000).toFixed(1).replace(/\.0$/,'') + 'K'; return String(v); }
 
+            const channelCardMap = new Map(); // login -> element
+
             function buildStreamCard(stream){
                 const container = document.createElement('div');
                 container.className = 'channel-container';
                 container.dataset.channel = stream.user_login;
                 if(selectedChannels.has(stream.user_login)) container.classList.add('selected');
-                container.addEventListener('click', () => toggleSelection(stream.user_login, container));
+                container.addEventListener('click', (e) => { if(isDragSelecting || (e && e.shiftKey)) return; toggleSelection(stream.user_login, container); });
+                // Shift + drag to multi-select: start on mousedown, add on enter
+                container.addEventListener('mousedown', (e)=>{
+                    if(e.button === 0 && e.shiftKey){
+                        isDragSelecting = true;
+                        if(!selectedChannels.has(stream.user_login)){
+                            selectedChannels.add(stream.user_login);
+                            container.classList.add('selected');
+                            updateGenerateButton();
+                        }
+                        e.preventDefault();
+                    }
+                });
+                container.addEventListener('mouseenter', ()=>{
+                    if(isDragSelecting){
+                        if(!selectedChannels.has(stream.user_login)){
+                            selectedChannels.add(stream.user_login);
+                            container.classList.add('selected');
+                            updateGenerateButton();
+                        }
+                    }
+                });
                 container.addEventListener('dblclick', () => {
                     const login = stream.user_login;
                     if(selectedChannels.has(login)){
@@ -511,7 +554,7 @@ export function renderHtml(content: string) {
 
                 const img = document.createElement('img');
                 img.className='stream-thumbnail';
-                img.src = stream.thumbnail_url.replace('{width}','160').replace('{height}','90') + '?v=' + Date.now();
+                img.src = stream.thumbnail_url.replace('{width}','160').replace('{height}','90');
                 img.alt = stream.user_login + ' thumbnail';
 
                 const info = document.createElement('div'); info.className='channel-info';
@@ -526,15 +569,50 @@ export function renderHtml(content: string) {
                 return container;
             }
 
+            function getOrCreateStreamCard(stream){
+                const key = stream.user_login;
+                let el = channelCardMap.get(key);
+                if(!el){
+                    el = buildStreamCard(stream);
+                    channelCardMap.set(key, el);
+                } else {
+                    // Update existing content without recreating image to avoid flicker
+                    const nameEl = el.querySelector('.channel-name'); if(nameEl) nameEl.textContent = stream.user_login;
+                    const titleEl = el.querySelector('.stream-title'); if(titleEl) titleEl.textContent = stream.title;
+                    const gameEl = el.querySelector('.stream-game'); if(gameEl) gameEl.textContent = stream.game_name || '';
+                    const uptimeEl = el.querySelector('.stream-uptime'); if(uptimeEl) uptimeEl.textContent = 'Live for ' + calculateUptime(stream.started_at);
+                    const viewersEl = el.querySelector('.viewer-count'); if(viewersEl) viewersEl.textContent = formatViewers(stream.viewer_count);
+                    const img = el.querySelector('img.stream-thumbnail');
+                    const desiredSrc = stream.thumbnail_url.replace('{width}','160').replace('{height}','90');
+                    if(img && img.getAttribute('src') !== desiredSrc){ img.setAttribute('src', desiredSrc); }
+                    // Selected state
+                    if(selectedChannels.has(stream.user_login)) el.classList.add('selected'); else el.classList.remove('selected');
+                }
+                return el;
+            }
+
             function renderStreams(){
                 const list = $('channelList');
-                list.innerHTML='';
                 if(!filteredStreams.length){
                     list.innerHTML = '<div class="no-results">No live streams match filters.</div>';
                     updateGenerateButton();
                     return;
                 }
-                filteredStreams.forEach(stream => list.appendChild(buildStreamCard(stream)));
+                // Reconcile DOM to avoid flicker
+                const seen = new Set();
+                filteredStreams.forEach(stream => {
+                    const card = getOrCreateStreamCard(stream);
+                    list.appendChild(card); // moves if already present
+                    seen.add(stream.user_login);
+                });
+                // Remove cards not in filtered list
+                Array.from(channelCardMap.keys()).forEach(login => {
+                    if(!seen.has(login)){
+                        const el = channelCardMap.get(login);
+                        if(el && el.parentElement === list) list.removeChild(el);
+                        channelCardMap.delete(login);
+                    }
+                });
                 updateGenerateButton();
             }
 
@@ -562,6 +640,24 @@ export function renderHtml(content: string) {
                 window.open('https://www.multitwitch.tv/' + channels + dark,'_blank');
             });
             document.addEventListener('keydown', e=>{ if(e.key==='Enter'){ const b=$('generate'); if(!b.disabled) b.click(); }});
+            // Ctrl/Cmd + A to select all filtered streams (unless typing in a field)
+            document.addEventListener('keydown', (e)=>{
+                const t = e.target;
+                const tag = (t && t.tagName) ? t.tagName.toLowerCase() : '';
+                const isFormField = tag === 'input' || tag === 'textarea' || (t && t.isContentEditable);
+                if(!isFormField && (e.ctrlKey || e.metaKey) && (e.key || '').toLowerCase() === 'a'){
+                    e.preventDefault();
+                    filteredStreams.forEach(s=> selectedChannels.add(s.user_login));
+                    // Reflect in UI
+                    filteredStreams.forEach(s=>{
+                        const card = document.querySelector('.channel-container[data-channel="' + s.user_login + '"]');
+                        if(card) card.classList.add('selected');
+                    });
+                    updateGenerateButton();
+                }
+            });
+            // End drag-select on mouseup anywhere
+            document.addEventListener('mouseup', ()=>{ if(isDragSelecting) isDragSelecting = false; });
 
             // ---------------- Filters & Sorting ----------------
             function populateGameFilter(){
@@ -738,6 +834,7 @@ export function renderHtml(content: string) {
                     userPrefs.sort_direction = data.sort_direction || null;
                     userPrefs.darkmode_url = (typeof data.darkmode_url === 'number') ? !!data.darkmode_url : (data.darkmode_url !== false);
                     userPrefs.default_filter_preset_id = data.default_filter_preset_id || null;
+                    userPrefs.card_scale = (typeof data.card_scale === 'number' && isFinite(data.card_scale)) ? data.card_scale : 1;
                     console.log('[prefs] loaded', userPrefs);
                 } catch(e){ console.warn('failed to load user prefs', e); }
             }
@@ -757,6 +854,9 @@ export function renderHtml(content: string) {
                     });
                     applySorting();
                 }
+                // Apply card scale CSS var (clamp 0.75..1.5)
+                const scale = Math.max(0.75, Math.min(1.5, Number(userPrefs.card_scale) || 1));
+                document.documentElement.style.setProperty('--card-scale', String(scale));
             }
 
             async function saveUserPreferences(partial){
@@ -768,6 +868,7 @@ export function renderHtml(content: string) {
                         sort_direction: ('sort_direction' in partial) ? partial.sort_direction : userPrefs.sort_direction,
                         darkmode_url: ('darkmode_url' in partial) ? !!partial.darkmode_url : userPrefs.darkmode_url,
                         default_filter_preset_id: ('default_filter_preset_id' in partial) ? partial.default_filter_preset_id : userPrefs.default_filter_preset_id,
+                        card_scale: ('card_scale' in partial) ? partial.card_scale : userPrefs.card_scale,
                     };
                     const resp = await fetch(location.origin + '/api/userprefs?user_id=' + encodeURIComponent(userId), {
                         method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(payload)
@@ -777,6 +878,7 @@ export function renderHtml(content: string) {
                     userPrefs.sort_direction = data.sort_direction || null;
                     userPrefs.darkmode_url = (typeof data.darkmode_url === 'number') ? !!data.darkmode_url : (data.darkmode_url !== false);
                     userPrefs.default_filter_preset_id = data.default_filter_preset_id || null;
+                    userPrefs.card_scale = (typeof data.card_scale === 'number' && isFinite(data.card_scale)) ? data.card_scale : userPrefs.card_scale;
                     console.log('[prefs] saved', userPrefs);
                 } catch(e){ console.warn('failed to save prefs', e); }
             }
@@ -790,6 +892,20 @@ export function renderHtml(content: string) {
                     userPrefs.darkmode_url = isActive;
                     saveUserPreferences({ darkmode_url: isActive });
                 });
+            })();
+
+            // Card scale +/- controls
+            (function(){
+                const minus = $('cardScaleMinus');
+                const plus = $('cardScalePlus');
+                function applyScale(next){
+                    const clamped = Math.max(0.75, Math.min(1.5, Math.round(next*100)/100));
+                    userPrefs.card_scale = clamped;
+                    document.documentElement.style.setProperty('--card-scale', String(clamped));
+                    saveUserPreferences({ card_scale: clamped });
+                }
+                minus?.addEventListener('click', ()=>{ applyScale((Number(userPrefs.card_scale)||1) - 0.1); });
+                plus?.addEventListener('click', ()=>{ applyScale((Number(userPrefs.card_scale)||1) + 0.1); });
             })();
 
             async function loadFilterPresets(){
@@ -956,12 +1072,13 @@ export function renderHtml(content: string) {
             }
 
             // ---------------- Auto-select application ----------------
-            function applyAutoSelections(){
+            function applyAutoSelections(filterSet){
                 if(!autoSelectPreferences || !autoSelectPreferences.size) return;
                 try{
-                    liveStreams.forEach(s => {
-                        const login = (s.user_login || '').toLowerCase();
-                        if(autoSelectPreferences.has(login)){
+                    liveStreams.forEach(function(s){
+                        const loginLower = (s.user_login || '').toLowerCase();
+                        const passes = !filterSet || filterSet.has(loginLower);
+                        if(passes && autoSelectPreferences.has(loginLower)){
                             selectedChannels.add(s.user_login);
                         }
                     });

@@ -85,7 +85,7 @@ async function handleApi(request: Request, env: Env): Promise<Response> {
     const userId = url.searchParams.get("user_id") || (await maybeJsonField(request, "user_id"));
     if (!userId) return corsify(json({ error: "user_id required" }, { status: 400 }));
     if (method === "GET") {
-      const { results } = await env.DB.prepare("SELECT user_id, sort_field, sort_direction, darkmode_url, default_filter_preset_id FROM user_preferences WHERE user_id = ?")
+      const { results } = await env.DB.prepare("SELECT user_id, sort_field, sort_direction, darkmode_url, default_filter_preset_id, card_scale FROM user_preferences WHERE user_id = ?")
         .bind(userId).all();
       return corsify(json(results[0] || { user_id: userId }));
     }
@@ -95,11 +95,12 @@ async function handleApi(request: Request, env: Env): Promise<Response> {
       const sort_direction = (body?.sort_direction as string) || null;
       const darkmode_url = typeof body?.darkmode_url === 'boolean' ? (body.darkmode_url ? 1 : 0) : (typeof body?.darkmode_url === 'number' ? (body.darkmode_url ? 1 : 0) : null);
       const default_filter_preset_id = (body?.default_filter_preset_id as number) ?? null;
-      await env.DB.prepare(`INSERT INTO user_preferences(user_id, sort_field, sort_direction, darkmode_url, default_filter_preset_id)
-        VALUES(?, ?, ?, ?, ?)
-        ON CONFLICT(user_id) DO UPDATE SET sort_field=excluded.sort_field, sort_direction=excluded.sort_direction, darkmode_url=excluded.darkmode_url, default_filter_preset_id=excluded.default_filter_preset_id, updated_at=CURRENT_TIMESTAMP`)
-        .bind(userId, sort_field, sort_direction, darkmode_url, default_filter_preset_id).run();
-      const { results } = await env.DB.prepare("SELECT user_id, sort_field, sort_direction, darkmode_url, default_filter_preset_id FROM user_preferences WHERE user_id = ?")
+      const card_scale = (typeof body?.card_scale === 'number' && isFinite(body.card_scale)) ? body.card_scale : null;
+      await env.DB.prepare(`INSERT INTO user_preferences(user_id, sort_field, sort_direction, darkmode_url, default_filter_preset_id, card_scale)
+        VALUES(?, ?, ?, ?, ?, ?)
+        ON CONFLICT(user_id) DO UPDATE SET sort_field=excluded.sort_field, sort_direction=excluded.sort_direction, darkmode_url=excluded.darkmode_url, default_filter_preset_id=excluded.default_filter_preset_id, card_scale=COALESCE(excluded.card_scale, user_preferences.card_scale), updated_at=CURRENT_TIMESTAMP`)
+        .bind(userId, sort_field, sort_direction, darkmode_url, default_filter_preset_id, card_scale).run();
+      const { results } = await env.DB.prepare("SELECT user_id, sort_field, sort_direction, darkmode_url, default_filter_preset_id, card_scale FROM user_preferences WHERE user_id = ?")
         .bind(userId).all();
       return corsify(json(results[0] || { user_id: userId }, { status: 201 }));
     }

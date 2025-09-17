@@ -1,59 +1,41 @@
-# Worker + D1 Database
+<div align="center">
 
-[![Deploy to Cloudflare](https://deploy.workers.cloudflare.com/button)](https://deploy.workers.cloudflare.com/?url=https://github.com/cloudflare/templates/tree/main/d1-template)
+	<img src="./image/twitchselect.png" alt="TwitchSelect" width="720" />
 
-![Worker + D1 Template Preview](https://imagedelivery.net/wSMYJvS3Xw-n339CbDyDIA/cb7cb0a9-6102-4822-633c-b76b7bb25900/public)
+	<h1 style="margin: 8px 0 0; font-weight: 800;">MultiTwitch Live Channel Selector</h1>
+	<p style="color: #8d8d96; margin: 6px 0 0;">Pick your favorites from the channels you follow and open them in MultiTwitch — fast.</p>
 
-<!-- dash-content-start -->
+</div>
 
-D1 is Cloudflare's native serverless SQL database ([docs](https://developers.cloudflare.com/d1/)). This project demonstrates using a Worker with a D1 binding to execute a SQL statement. A simple frontend displays the result of this query:
+## What this is
 
-```SQL
-SELECT * FROM comments LIMIT 3;
-```
+Simple, focused, and fast: authenticate with Twitch, see who’s live, filter/sort, select, and open a MultiTwitch link.
 
-The D1 database is initialized with a `comments` table and this data:
+## How to use
 
-```SQL
-INSERT INTO comments (author, content)
-VALUES
-    ('Kristian', 'Congrats!'),
-    ('Serena', 'Great job!'),
-    ('Max', 'Keep up the good work!')
-;
-```
+- Sign in with Twitch (top-right)
+- Use the filters on the left: Streamer, Title, and Game
+- Sort by Viewers, Channel Name, or Uptime (top of results)
+- Click cards to select; click again to unselect
+- Press Enter to trigger the “Open” button
+- Middle‑click or double‑click a card to open it immediately (respects Dark URL setting)
+- Toggle Dark URL to append `?darkmode` to MultiTwitch
+- Star button lets you save filter presets (and set a default)
+- Auto‑select toggles (right pane) automatically select those streamers when they’re live
 
-> [!IMPORTANT]
-> When using C3 to create this project, select "no" when it asks if you want to deploy. You need to follow this project's [setup steps](https://github.com/cloudflare/templates/tree/main/d1-template#setup-steps) before deploying.
+## Notes
 
-<!-- dash-content-end -->
+- It only shows streamers you follow
+- Live list, stable selection UI, and minimal refresh flicker
+- Preferences and presets are saved for your account
 
-## Getting Started
+## Privacy
 
-Outside of this repo, you can start a new project with this template using [C3](https://developers.cloudflare.com/pages/get-started/c3/) (the `create-cloudflare` CLI):
+Uses Twitch OAuth to read followed channels and live data. No extra permissions beyond that.
 
-```
-npm create cloudflare@latest -- --template=cloudflare/templates/d1-template
-```
+## Local development
 
-A live public deployment of this template is available at [https://d1-template.templates.workers.dev](https://d1-template.templates.workers.dev)
+It’s a Cloudflare Worker (TypeScript) with a D1 database for preferences.
+If you’re familiar with Workers, you’ll feel at home. Otherwise, the code is straightforward to skim.
 
-## Setup Steps
-
-1. Install the project dependencies with a package manager of your choice:
-   ```bash
-   npm install
-   ```
-2. Create a [D1 database](https://developers.cloudflare.com/d1/get-started/) with the name "d1-template-database":
-   ```bash
-   npx wrangler d1 create d1-template-database
-   ```
-   ...and update the `database_id` field in `wrangler.json` with the new database ID.
-3. Run the following db migration to initialize the database (notice the `migrations` directory in this project):
-   ```bash
-   npx wrangler d1 migrations apply --remote d1-template-database
-   ```
-4. Deploy the project!
-   ```bash
-   npx wrangler deploy
-   ```
+— Enjoy!
