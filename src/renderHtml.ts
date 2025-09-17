@@ -40,7 +40,7 @@ export function renderHtml(content: string) {
         .results-header { display:flex; gap:15px; margin-bottom:20px; align-items:center; }
         .sort-option { background:#24242a; border:1px solid #303036; color:#cfcfd4; padding:8px 16px; border-radius:20px; cursor:pointer; font-size:13px; transition:all .25s; user-select:none; }
         .sort-option:hover { background:#2a2a30; border-color:#a970ff; }
-        .sort-option.active-asc, .sort-option.active-desc { background:#a970ff; color:#fff; border-color:#a970ff; }
+    .sort-option.active-asc, .sort-option.active-desc { background:#24242a; color:#cfcfd4; border-color:#a970ff; }
         .sort-option.active-asc::after { content:" ↑"; }
         .sort-option.active-desc::after { content:" ↓"; }
         .channel-list { flex:1; }
@@ -94,6 +94,30 @@ export function renderHtml(content: string) {
         .filter-pane::-webkit-scrollbar-track, .results-area::-webkit-scrollbar-track, .follower-list::-webkit-scrollbar-track { background:#252525; border-radius:10px; }
         .filter-pane::-webkit-scrollbar-thumb, .results-area::-webkit-scrollbar-thumb, .follower-list::-webkit-scrollbar-thumb { background:#D9D9D9; border-radius:10px; transition:background .3s; }
         .filter-pane::-webkit-scrollbar-thumb:hover, .results-area::-webkit-scrollbar-thumb:hover, .follower-list::-webkit-scrollbar-thumb:hover { background:#BFBFBF; }
+        /* Generate row with star presets */
+        .generate-row { display:flex; align-items:center; gap:10px; margin-bottom:12px; }
+        #presetStarBtn { width:40px; height:40px; border-radius:10px; border:1px solid #303036; background:#24242a; display:flex; align-items:center; justify-content:center; cursor:pointer; transition:transform .18s ease, background .25s, border-color .25s; }
+        #presetStarBtn:hover { background:#2a2a30; border-color:#a970ff; transform:translateY(-1px); }
+        .star-icon { width:22px; height:22px; display:block; }
+        .star-white { fill:#ffffff; filter:drop-shadow(0 2px 4px rgba(0,0,0,.35)); }
+        .star-yellow { fill:#FFD54A; filter:drop-shadow(0 2px 4px rgba(0,0,0,.35)); }
+        .preset-dropdown { position:relative; }
+        .preset-panel { position:absolute; top:44px; left:0; width:100%; max-width:260px; background:#1b1b1f; border:1px solid #303036; border-radius:10px; box-shadow:0 10px 30px rgba(0,0,0,.5); z-index:200; display:none; }
+        .preset-panel.open { display:block; }
+        .preset-list { max-height:260px; overflow:auto; padding:6px; }
+        .preset-item { display:flex; align-items:center; justify-content:space-between; gap:10px; padding:8px 10px; border-radius:8px; cursor:pointer; transition:background .2s; }
+        .preset-item:hover { background:#24242a; }
+        .preset-name { font-size:13px; color:#e0e0e0; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+        .preset-badges { display:flex; align-items:center; gap:6px; }
+        .badge-default { font-size:10px; color:#a970ff; border:1px solid #a970ff; padding:2px 6px; border-radius:10px; white-space:nowrap; }
+        .preset-footer { padding:8px; border-top:1px solid #303036; display:flex; gap:8px; }
+        #newPresetName { flex:1; padding:6px 10px; background:#24242a; border:1px solid #303036; border-radius:8px; color:#e0e0e0; }
+        #addPresetBtn { background:#a970ff; color:#fff; border:none; border-radius:8px; padding:6px 10px; cursor:pointer; }
+        .ctx-menu { position:absolute; background:#1f1f24; border:1px solid #303036; border-radius:8px; box-shadow:0 10px 30px rgba(0,0,0,.5); z-index:400; display:none; min-width:180px; }
+        .ctx-menu.open { display:block; }
+        .ctx-item { padding:8px 12px; color:#ddd; cursor:pointer; font-size:13px; }
+        .ctx-item:hover { background:#2a2a30; }
+        .ctx-sep { height:1px; background:#303036; margin:4px 0; }
     </style>
 </head>
 <body>
@@ -111,21 +135,37 @@ export function renderHtml(content: string) {
             </div>
             <div class="nav-center"><h1>MultiTwitch Live Channel Selector</h1></div>
                         <div class="nav-right">
-                            <div class="profile-wrapper" id="profileWrapper">
-                                <div class="profile-avatar"><img id="profileImg" src="" alt="Profile" /></div>
-                                <div class="username-tooltip" id="usernameTooltip">Not signed in</div>
-                            </div>
                             <label title="Append ?darkmode to MultiTwitch links" style="display:flex; align-items:center; gap:6px; font-size:12px; color:#cfcfd4; cursor:pointer;">
                                 <input type="checkbox" id="darkUrlToggle" style="accent-color:#a970ff; cursor:pointer;" />
                                 Dark URL
                             </label>
+                            <div class="profile-wrapper" id="profileWrapper">
+                                <div class="profile-avatar"><img id="profileImg" src="" alt="Profile" /></div>
+                                <div class="username-tooltip" id="usernameTooltip">Not signed in</div>
+                            </div>
                             <button class="logout-btn" id="logoutBtn" style="display:none;">Logout</button>
                         </div>
         </div>
     </div>
     <div class="main-container">
         <div class="filter-pane">
-            <button id="generate" disabled>Generate MultiTwitch Link</button>
+            <div class="generate-row">
+                <div class="preset-dropdown" id="presetDropdown">
+                    <button id="presetStarBtn" title="Saved filters">
+                        <svg class="star-icon" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                            <path id="starPath" class="star-white" d="M12 .587l3.668 7.431 8.2 1.193-5.934 5.786 1.402 8.168L12 18.896l-7.336 3.869 1.402-8.168L.132 9.211l8.2-1.193z"/>
+                        </svg>
+                    </button>
+                    <div class="preset-panel" id="presetPanel">
+                        <div class="preset-list" id="presetList"></div>
+                        <div class="preset-footer">
+                            <input type="text" id="newPresetName" placeholder="New preset name..." />
+                            <button id="addPresetBtn" title="Add">+</button>
+                        </div>
+                    </div>
+                </div>
+                <button id="generate" disabled>Generate MultiTwitch Link</button>
+            </div>
             <div class="filter-section">
                 <label for="streamerFilter">Streamer Name</label>
                 <input type="text" id="streamerFilter" class="filter-input" placeholder="Search streamers..." />
@@ -137,20 +177,6 @@ export function renderHtml(content: string) {
             <div class="filter-section">
                 <label for="gameFilter">Game</label>
                 <select id="gameFilter" class="filter-select"></select>
-            </div>
-            <div class="filter-section">
-                <label for="presetSelect">Saved Presets</label>
-                <select id="presetSelect" class="filter-select"></select>
-                <div style="display:flex; gap:8px; margin-top:8px;">
-                    <input type="text" id="presetName" class="filter-input" placeholder="Preset name..." style="flex:1;" />
-                </div>
-                <div style="display:flex; gap:8px; margin-top:8px;">
-                    <button id="savePresetBtn" class="sort-option" style="flex:1; text-align:center;">Save Preset</button>
-                    <button id="deletePresetBtn" class="sort-option" style="flex:1; text-align:center;">Delete</button>
-                </div>
-                <div style="display:flex; gap:8px; margin-top:8px;">
-                    <button id="setDefaultPresetBtn" class="sort-option" style="flex:1; text-align:center;">Set Default</button>
-                </div>
             </div>
             <div class="last-updated"><div id="lastRefreshed">Loading...</div></div>
         </div>
@@ -203,6 +229,7 @@ export function renderHtml(content: string) {
             let filterPresets = [];
             let activePresetId = null;
             let activePresetGameName = null; // handle non-live game options
+            let allowNativeContextMenuOnce = false; // for Inspect
 
             // Utility
             const qs = sel => document.querySelector(sel);
@@ -250,6 +277,7 @@ export function renderHtml(content: string) {
                         if (userPrefs.default_filter_preset_id) {
                             applyPresetById(userPrefs.default_filter_preset_id);
                         }
+                        updateStarIcon();
                     } else {
                         throw new Error('User not found');
                     }
@@ -422,6 +450,11 @@ export function renderHtml(content: string) {
                     window.open('https://www.multitwitch.tv/' + stream.user_login + dark, '_blank');
                 });
                 container.addEventListener('auxclick', (e)=>{ if(e.button===1){ e.preventDefault(); const dark = userPrefs.darkmode_url ? '?darkmode' : ''; window.open('https://www.multitwitch.tv/' + stream.user_login + dark, '_blank'); }});
+                container.addEventListener('contextmenu', (e)=>{
+                    if (e.shiftKey || allowNativeContextMenuOnce) { allowNativeContextMenuOnce = false; return; }
+                    e.preventDefault(); e.stopPropagation();
+                    showChannelContextMenu(stream.user_login, e.clientX, e.clientY);
+                });
 
                 const img = document.createElement('img');
                 img.className='stream-thumbnail';
@@ -680,20 +713,9 @@ export function renderHtml(content: string) {
                     const resp = await fetch(location.origin + '/api/filter-presets?user_id=' + encodeURIComponent(userId));
                     const data = await resp.json();
                     filterPresets = data.presets || [];
-                    populatePresetSelect();
+                    renderPresetList();
+                    updateStarIcon();
                 } catch(e){ console.warn('failed to load presets', e); }
-            }
-
-            function populatePresetSelect(){
-                const sel = $('presetSelect'); if(!sel) return;
-                const defId = userPrefs.default_filter_preset_id;
-                let html = '<option value="">-- No preset --</option>';
-                filterPresets.forEach(p => {
-                    const label = p.name + (defId && p.id === defId ? ' (default)' : '');
-                    html += '<option value="' + String(p.id) + '">' + label.replace(/</g,'&lt;') + '</option>';
-                });
-                sel.innerHTML = html;
-                if(activePresetId && Array.from(sel.options).some(o=>o.value===String(activePresetId))){ sel.value = String(activePresetId); }
             }
 
             function applyPresetById(id){
@@ -712,20 +734,65 @@ export function renderHtml(content: string) {
                     $('gameFilter').value = '';
                 }
                 applyFilters();
-                populatePresetSelect();
-                // Update preset name input to current preset
-                const nameInput = $('presetName'); if(nameInput) nameInput.value = preset.name || '';
+                renderPresetList();
             }
 
-            $('presetSelect')?.addEventListener('change', ()=>{
-                const val = $('presetSelect').value;
-                if(val){ applyPresetById(val); } else { activePresetId = null; activePresetGameName = null; applyFilters(); }
+            function renderPresetList(){
+                const list = $('presetList'); if(!list) return;
+                list.innerHTML = '';
+                const defId = userPrefs.default_filter_preset_id;
+                if(!filterPresets.length){
+                    const empty = document.createElement('div');
+                    empty.className='no-results';
+                    empty.style.padding = '12px';
+                    empty.textContent = 'No saved filters';
+                    list.appendChild(empty);
+                } else {
+                    filterPresets.forEach(p => {
+                        const row = document.createElement('div'); row.className='preset-item'; row.dataset.id = String(p.id);
+                        const name = document.createElement('div'); name.className='preset-name'; name.textContent = p.name;
+                        const badges = document.createElement('div'); badges.className='preset-badges';
+                        if(defId && p.id === defId){
+                            const b = document.createElement('div'); b.className='badge-default'; b.textContent='default'; badges.appendChild(b);
+                        }
+                        row.appendChild(name); row.appendChild(badges);
+                        row.addEventListener('click', ()=>{ applyPresetById(p.id); });
+                        row.addEventListener('contextmenu', (e)=>{
+                            if(e.shiftKey){ return; }
+                            e.preventDefault(); e.stopPropagation();
+                            showPresetContextMenu(p, e.clientX, e.clientY);
+                        });
+                        list.appendChild(row);
+                    });
+                }
+            }
+
+            function updateStarIcon(){
+                const path = $('starPath'); if(!path) return;
+                if(userPrefs.default_filter_preset_id){ path.classList.remove('star-white'); path.classList.add('star-yellow'); }
+                else { path.classList.remove('star-yellow'); path.classList.add('star-white'); }
+            }
+
+            $('presetStarBtn')?.addEventListener('click', (e)=>{
+                e.preventDefault(); e.stopPropagation();
+                const panel = $('presetPanel'); if(!panel) return;
+                panel.classList.toggle('open');
             });
 
-            $('savePresetBtn')?.addEventListener('click', async ()=>{
+            document.addEventListener('click', (e)=>{
+                const panel = $('presetPanel'); if(!panel) return;
+                if(panel.classList.contains('open')){
+                    // Close when clicking outside
+                    const dropdown = $('presetDropdown');
+                    if(dropdown && !dropdown.contains(e.target)){ panel.classList.remove('open'); }
+                }
+                hideAnyContextMenus();
+            });
+
+            $('addPresetBtn')?.addEventListener('click', async ()=>{
                 if(!userId) return;
-                const name = ($('presetName').value || '').trim();
-                if(!name){ alert('Please enter a preset name.'); return; }
+                const name = ($('newPresetName').value || '').trim();
+                if(!name){ alert('Enter a preset name'); return; }
                 const payload = {
                     user_id: userId,
                     name: name,
@@ -736,36 +803,65 @@ export function renderHtml(content: string) {
                 try{
                     const resp = await fetch(location.origin + '/api/filter-presets?user_id=' + encodeURIComponent(userId), { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(payload) });
                     const data = await resp.json();
-                    await loadFilterPresets();
                     activePresetId = data.id;
-                    populatePresetSelect();
-                    if($('presetSelect')) $('presetSelect').value = String(activePresetId);
+                    $('newPresetName').value = '';
+                    await loadFilterPresets();
+                    const panel = $('presetPanel'); if(panel) panel.classList.add('open');
                 } catch(e){ console.warn('failed to save preset', e); }
             });
 
-            $('deletePresetBtn')?.addEventListener('click', async ()=>{
-                if(!userId) return;
-                const id = $('presetSelect').value;
-                if(!id){ alert('Select a preset to delete.'); return; }
-                try{
-                    await fetch(location.origin + '/api/filter-presets?user_id=' + encodeURIComponent(userId) + '&id=' + encodeURIComponent(id), { method:'DELETE' });
-                    if (userPrefs.default_filter_preset_id && String(userPrefs.default_filter_preset_id) === String(id)) {
-                        // Clear default if we deleted it
-                        await saveUserPreferences({ default_filter_preset_id: null });
-                    }
-                    activePresetId = null;
-                    await loadFilterPresets();
-                    populatePresetSelect();
-                    $('presetSelect').value = '';
-                } catch(e){ console.warn('failed to delete preset', e); }
-            });
+            function showPresetContextMenu(preset, x, y){
+                let menu = document.getElementById('presetCtx');
+                if(!menu){
+                    menu = document.createElement('div'); menu.id='presetCtx'; menu.className='ctx-menu';
+                    menu.innerHTML = '<div class="ctx-item" id="ctxSetDefault"></div><div class="ctx-item" id="ctxUnsetDefault" style="display:none;">Unset default</div><div class="ctx-sep"></div><div class="ctx-item" id="ctxDelete">Delete</div><div class="ctx-sep"></div><div class="ctx-item" id="ctxInspect">Inspect (browser menu)</div>';
+                    document.body.appendChild(menu);
+                }
+                (menu as any).currentPresetId = preset.id;
+                const setItem = document.getElementById('ctxSetDefault');
+                const unsetItem = document.getElementById('ctxUnsetDefault');
+                const deleteItem = document.getElementById('ctxDelete');
+                const inspectItem = document.getElementById('ctxInspect');
+                if(userPrefs.default_filter_preset_id && preset.id === userPrefs.default_filter_preset_id){
+                    setItem.style.display = 'none'; unsetItem.style.display = 'block';
+                } else { setItem.style.display = 'block'; setItem.textContent = 'Set default'; unsetItem.style.display = 'none'; }
+                menu.style.left = x + 'px'; menu.style.top = y + 'px'; menu.classList.add('open');
+                setItem.onclick = async ()=>{ await saveUserPreferences({ default_filter_preset_id: Number(preset.id) }); renderPresetList(); updateStarIcon(); hideAnyContextMenus(); };
+                unsetItem.onclick = async ()=>{ await saveUserPreferences({ default_filter_preset_id: null }); renderPresetList(); updateStarIcon(); hideAnyContextMenus(); };
+                deleteItem.onclick = async ()=>{
+                    try{
+                        await fetch(location.origin + '/api/filter-presets?user_id=' + encodeURIComponent(userId) + '&id=' + encodeURIComponent(preset.id), { method:'DELETE' });
+                        if (userPrefs.default_filter_preset_id && String(userPrefs.default_filter_preset_id) === String(preset.id)) {
+                            await saveUserPreferences({ default_filter_preset_id: null });
+                        }
+                        if (activePresetId && String(activePresetId) === String(preset.id)) activePresetId = null;
+                        await loadFilterPresets();
+                    } catch(e){ console.warn('failed to delete preset', e); }
+                    hideAnyContextMenus();
+                };
+                // Can't programmatically open DevTools; instruct user to Shift+Right-Click for browser menu
+                if (inspectItem) {
+                    inspectItem.onclick = ()=>{ hideAnyContextMenus(); allowNativeContextMenuOnce = true; };
+                }
+            }
 
-            $('setDefaultPresetBtn')?.addEventListener('click', async ()=>{
-                const id = $('presetSelect').value;
-                if(!id){ alert('Select a preset to set as default.'); return; }
-                await saveUserPreferences({ default_filter_preset_id: Number(id) });
-                populatePresetSelect();
-            });
+            function showChannelContextMenu(login, x, y){
+                let menu = document.getElementById('channelCtx');
+                if(!menu){
+                    menu = document.createElement('div'); menu.id='channelCtx'; menu.className='ctx-menu';
+                    menu.innerHTML = '<div class="ctx-item" id="chOpen">Open in new tab</div><div class="ctx-sep"></div><div class="ctx-item" id="chInspect">Inspect (browser menu)</div>';
+                    document.body.appendChild(menu);
+                }
+                menu.style.left = x + 'px'; menu.style.top = y + 'px'; menu.classList.add('open');
+                const openItem = document.getElementById('chOpen');
+                const inspItem = document.getElementById('chInspect');
+                openItem.onclick = ()=>{ const dark = userPrefs.darkmode_url ? '?darkmode' : ''; window.open('https://www.multitwitch.tv/' + login + dark, '_blank'); hideAnyContextMenus(); };
+                inspItem.onclick = ()=>{ hideAnyContextMenus(); allowNativeContextMenuOnce = true; };
+            }
+
+            function hideAnyContextMenus(){
+                document.querySelectorAll('.ctx-menu.open').forEach(el => el.classList.remove('open'));
+            }
 
             // ---------------- Auto-select application ----------------
             function applyAutoSelections(){
