@@ -140,16 +140,35 @@ export function renderHtml(content: string) {
         .ctx-sep { height:1px; background:#303036; margin:4px 0; }
     .help-link { text-decoration:none; color:#cfcfd4; font-weight:600; font-size:16px; display:inline-flex; align-items:center; justify-content:center; width:26px; height:26px; border-radius:50%; border:1px solid #303036; background:#24242a; transition:transform .18s ease, background .25s, border-color .25s; }
     .help-link:hover { color:#fff; background:#2a2a30; border-color:#a970ff; transform:translateY(-1px); }
+    /* Logged-out screen */
+    .loggedout-screen { position:fixed; inset:60px 0 0 0; display:none; align-items:center; justify-content:center; background:#0e0e10; z-index:200; }
+    .loggedout-screen.open { display:flex; }
+    .loggedout-card { background:#1b1b1f; border:1px solid #303036; border-radius:12px; padding:20px; width:420px; box-shadow:0 16px 50px rgba(0,0,0,.6); text-align:center; }
+    .loggedout-title { font-size:18px; font-weight:700; margin:0 0 10px 0; }
+    .loggedout-text { font-size:13px; color:#cfcfd4; margin-bottom:16px; }
+    .loggedout-actions { display:flex; flex-direction:column; gap:10px; align-items:center; }
+    .link-plain { color:#a970ff; text-decoration:none; }
+    .link-plain:hover { text-decoration:underline; }
     </style>
 </head>
 <body>
     <div class="modal-overlay" id="logoutModal">
         <div class="modal-card" role="dialog" aria-modal="true" aria-labelledby="logoutTitle">
             <h3 class="modal-title" id="logoutTitle">Sign out</h3>
-            <div class="modal-text">To fully sign out, you'll be taken to Twitch to log out there.</div>
+            <div class="modal-text">If you aren't logged out on Twitch, you'll be re-logged in here next time. You can open twitch.tv to log out there after this step.</div>
             <div class="modal-actions">
                 <button class="btn" id="logoutCancel">Cancel</button>
                 <button class="btn btn-primary" id="logoutConfirm">Sign out</button>
+            </div>
+        </div>
+    </div>
+    <div class="loggedout-screen" id="loggedOutScreen">
+        <div class="loggedout-card">
+            <div class="loggedout-title">You're signed out here</div>
+            <div class="loggedout-text">If you stay signed in on Twitch, you'll be signed back in here when you log in again.</div>
+            <div class="loggedout-actions">
+                <button class="btn btn-primary" id="loginBtn">Login with Twitch</button>
+                <a class="link-plain" href="https://www.twitch.tv/logout" target="_blank" rel="noopener">Open twitch.tv to fully log out →</a>
             </div>
         </div>
     </div>
@@ -347,15 +366,31 @@ export function renderHtml(content: string) {
                 }
             }
 
-            function logout(auto) {
+            function showLoggedOutScreen(){ const scr = $('loggedOutScreen'); if(scr) scr.classList.add('open'); }
+            function hideLoggedOutScreen(){ const scr = $('loggedOutScreen'); if(scr) scr.classList.remove('open'); }
+            async function revokeTokenIfPossible(){
+                try{
+                    if(accessToken){
+                        const body = new URLSearchParams(); body.set('client_id', TWITCH_CLIENT_ID); body.set('token', accessToken);
+                        await fetch('https://id.twitch.tv/oauth2/revoke', { method:'POST', headers:{'Content-Type':'application/x-www-form-urlencoded'}, body });
+                    }
+                }catch(e){}
+            }
+            async function logout(auto) {
+                await revokeTokenIfPossible();
                 localStorage.removeItem('twitch_access_token');
-                accessToken = null;
-                userData = null; userId = null;
-                selectedChannels.clear();
-                autoSelectPreferences.clear();
+                accessToken = null; userData = null; userId = null;
+                selectedChannels.clear(); autoSelectPreferences.clear();
                 hydrateUserUI();
-                // no background timer to clear
-                if(!auto) startAuth();
+                if(auto){
+                    // Auth failure path: allow normal login
+                    try{ localStorage.removeItem('suppress_auto_login'); }catch(e){}
+                    startAuth();
+                } else {
+                    // Manual sign out: show logged-out screen and suppress auto-login
+                    try{ localStorage.setItem('suppress_auto_login','1'); }catch(e){}
+                    showLoggedOutScreen();
+                }
             }
             // Modal logout flow
             (function(){
@@ -368,9 +403,7 @@ export function renderHtml(content: string) {
                 if(modal){ modal.addEventListener('click', (e)=>{ if(e.target === modal) modal.classList.remove('open'); }); }
                 if(confirm){ confirm.addEventListener('click', ()=>{
                     modal.classList.remove('open');
-                    // Open Twitch logout, then return to app
-                    const tw = window.open('https://www.twitch.tv/logout', '_blank');
-                    setTimeout(()=>{ logout(false); }, 200);
+                    logout(false);
                 }); }
             })();
 
@@ -617,6 +650,9 @@ export function renderHtml(content: string) {
                     updateGenerateButton();
                     return;
                 }
+                // Remove any previous empty-state message before rendering cards
+                const prevEmpty = list.querySelector('.no-results');
+                if(prevEmpty){ try{ list.removeChild(prevEmpty); }catch(e){} }
                 // Reconcile DOM to avoid flicker
                 const seen = new Set();
                 filteredStreams.forEach(stream => {
@@ -1128,10 +1164,18 @@ export function renderHtml(content: string) {
             // Initial Flow
             parseHashToken();
             if(!accessToken){
-                startAuth();
+                if(localStorage.getItem('suppress_auto_login') === '1'){
+                    showLoggedOutScreen();
+                } else {
+                    startAuth();
+                }
             } else {
+                try{ localStorage.removeItem('suppress_auto_login'); }catch(e){}
                 fetchUser();
             }
+
+            // Login button in logged-out overlay
+            (function(){ const btn = $('loginBtn'); btn?.addEventListener('click', ()=>{ try{ localStorage.removeItem('suppress_auto_login'); }catch(e){} hideLoggedOutScreen(); startAuth(); }); })();
 
             // Expose for console debugging
             window.__multi = { get state(){ return { userData, selectedChannels:[...selectedChannels], autoSelect:[...autoSelectPreferences], liveStreams, followedChannels, filteredStreams }; }, refreshLiveStreams, applyFilters };
