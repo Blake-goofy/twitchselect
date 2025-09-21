@@ -1,6 +1,3 @@
-// Renders the MultiTwitch offline demo HTML. The incoming `content` string can be
-// used to inject server-fetched JSON (e.g., autoselect rows) for debugging or hydration.
-// For production you'd likely swap to a proper bundler and static asset hosting.
 export function renderHtml(content: string) {
     // Use String.raw to avoid accidental interpretation of inner backticks or ${} in embedded JS.
     return String.raw`<!DOCTYPE html>
@@ -8,7 +5,7 @@ export function renderHtml(content: string) {
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>MultiTwitch Live Selector</title>
+    <title>Twitch Select</title>
     <link rel="icon" type="image/x-icon" href="/multitwitch.ico?v=2">
     <link rel="icon" type="image/png" href="/multitwitch.png?v=2">
     <style>
