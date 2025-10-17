@@ -510,6 +510,17 @@ export function renderHtml(content: string) {
                 });
                 console.log('[streams] live count after dedupe:', liveStreams.length);
                 const newLiveSet = new Set(liveStreams.map(function(s){ return (s.user_login||'').toLowerCase(); }));
+                // Remove offline channels from selected channels
+                const offlineSelected = Array.from(selectedChannels).filter(function(login){
+                    return !newLiveSet.has(login.toLowerCase());
+                });
+                offlineSelected.forEach(function(login){
+                    selectedChannels.delete(login);
+                    console.log('[selection] removed offline channel:', login);
+                });
+                if(offlineSelected.length > 0){
+                    updateGenerateButton();
+                }
                 // Enrich with mapping for quick lookups
                 populateGameFilter();
                 if(lastLiveLoginSet === null){
