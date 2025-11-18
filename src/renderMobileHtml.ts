@@ -14,7 +14,9 @@ export function renderMobileHtml(content: string) {
             color: #e0e0e0; 
             font-family: 'Arial', sans-serif; 
             overflow-x: hidden;
-            padding-bottom: 80px; /* space for footer */
+        }
+        body.player-open {
+            overflow: hidden;
         }
         
         /* Top Bar */
@@ -59,12 +61,13 @@ export function renderMobileHtml(content: string) {
         /* Main Container */
         .main-container { 
             margin-top: 56px;
-            padding: 0 0 80px 0;
+            padding: 0;
+            min-height: calc(100vh - 56px - 68px); /* viewport - header - footer */
         }
 
         /* Stream List */
         .stream-list { 
-            padding: 8px; 
+            padding: 8px 8px 76px 8px; /* bottom padding for sticky footer */
         }
         .stream-card { 
             background: #1b1b1f; 
@@ -183,6 +186,7 @@ export function renderMobileHtml(content: string) {
             background: #000;
             z-index: 300;
             display: none;
+            overflow: hidden;
         }
         .player-overlay.open {
             display: flex;
@@ -545,25 +549,15 @@ export function renderMobileHtml(content: string) {
             if (!selectedChannels.size) return;
             const channel = Array.from(selectedChannels)[0];
             
-            // Find the stream data for uptime
-            const streamData = liveStreams.find(s => s.user_login === channel);
-            
-            // Use Twitch embedded player to avoid app hijacking
-            // parent must be the exact hostname (without port for localhost, include for production)
-            const hostname = location.hostname;
-            const parent = (hostname === 'localhost' || hostname === '127.0.0.1') ? hostname : location.host;
-            const playerUrl = 'https://player.twitch.tv/?channel=' + encodeURIComponent(channel) + 
-                              '&parent=' + encodeURIComponent(parent) + '&muted=false&autoplay=true';
-            
-            $('playerIframe').src = playerUrl;
-            $('playerChannelName').textContent = channel;
-            $('playerUptime').textContent = streamData ? 'Live for ' + calculateUptime(streamData.started_at) : '';
-            $('playerOverlay').classList.add('open');
+            // Navigate to Twitch directly to preserve login/Turbo status
+            // Using location.href keeps the session
+            location.href = 'https://www.twitch.tv/' + encodeURIComponent(channel);
         });
 
         $('closePlayerBtn').addEventListener('click', () => {
             $('playerOverlay').classList.remove('open');
             $('playerIframe').src = '';
+            document.body.classList.remove('player-open');
         });
 
         $('loginBtn').addEventListener('click', () => {
