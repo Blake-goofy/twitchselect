@@ -64,86 +64,85 @@ export function renderMobileHtml(content: string) {
 
         /* Stream List */
         .stream-list { 
-            padding: 12px; 
+            padding: 8px; 
         }
         .stream-card { 
             background: #1b1b1f; 
-            border-radius: 12px; 
-            margin-bottom: 12px; 
-            overflow: hidden;
+            border-radius: 10px; 
+            margin-bottom: 8px; 
             border: 2px solid transparent;
             transition: border-color 0.2s ease;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 10px;
         }
         .stream-card.selected { 
             border-color: #a970ff; 
         }
         .stream-thumbnail-wrapper {
             position: relative;
-            width: 100%;
-            padding-top: 56.25%; /* 16:9 aspect ratio */
+            width: 120px;
+            height: 68px;
+            flex-shrink: 0;
             background: #000;
+            border-radius: 6px;
+            overflow: hidden;
         }
         .stream-thumbnail { 
-            position: absolute;
-            top: 0;
-            left: 0;
             width: 100%; 
             height: 100%;
             object-fit: cover;
         }
-        .live-badge {
-            position: absolute;
-            top: 8px;
-            left: 8px;
-            background: #ff4444;
-            color: #fff;
-            padding: 4px 8px;
-            border-radius: 4px;
-            font-size: 11px;
-            font-weight: 700;
-            text-transform: uppercase;
-        }
         .viewer-badge {
             position: absolute;
-            bottom: 8px;
-            right: 8px;
-            background: rgba(0,0,0,0.7);
+            bottom: 4px;
+            right: 4px;
+            background: rgba(0,0,0,0.75);
             color: #fff;
-            padding: 4px 8px;
-            border-radius: 4px;
-            font-size: 12px;
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-size: 10px;
             font-weight: 600;
         }
         .stream-info { 
-            padding: 12px; 
-        }
-        .stream-header {
+            flex: 1;
+            min-width: 0;
             display: flex;
-            justify-content: space-between;
-            align-items: flex-start;
-            margin-bottom: 8px;
+            flex-direction: column;
+            justify-content: center;
         }
         .channel-name { 
-            font-size: 16px; 
+            font-size: 15px; 
             font-weight: 700; 
             color: #ffffff;
             margin-bottom: 4px;
         }
-        .stream-uptime {
-            font-size: 11px;
-            color: #8d8d96;
-            white-space: nowrap;
-        }
         .stream-title { 
             font-size: 13px; 
             color: #cfcfd4; 
-            margin-bottom: 6px;
-            line-height: 1.4;
+            margin-bottom: 4px;
+            line-height: 1.3;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
+        }
+        .stream-meta {
+            display: flex;
+            gap: 8px;
+            align-items: center;
+            flex-wrap: wrap;
         }
         .stream-game { 
-            font-size: 12px; 
+            font-size: 11px; 
             color: #a970ff; 
             font-weight: 600;
+        }
+        .stream-uptime {
+            font-size: 11px;
+            color: #8d8d96;
         }
 
         /* Footer */
@@ -430,21 +429,20 @@ export function renderMobileHtml(content: string) {
                 
                 card.addEventListener('click', () => toggleSelection(stream.user_login, card));
                 
-                const thumbnailUrl = stream.thumbnail_url.replace('{width}', '640').replace('{height}', '360');
+                const thumbnailUrl = stream.thumbnail_url.replace('{width}', '320').replace('{height}', '180');
                 
                 card.innerHTML = ${"`"}
                     <div class="stream-thumbnail-wrapper">
                         <img src="${'${thumbnailUrl}'}" alt="${'${stream.user_login}'}" class="stream-thumbnail" />
-                        <div class="live-badge">LIVE</div>
-                        <div class="viewer-badge">${'${formatViewers(stream.viewer_count)}'} viewers</div>
+                        <div class="viewer-badge">${'${formatViewers(stream.viewer_count)}'}</div>
                     </div>
                     <div class="stream-info">
-                        <div class="stream-header">
-                            <div class="channel-name">${'${stream.user_login}'}</div>
+                        <div class="channel-name">${'${stream.user_login}'}</div>
+                        <div class="stream-title">${'${stream.title}'}</div>
+                        <div class="stream-meta">
+                            <div class="stream-game">${'${stream.game_name || "No category"}'}</div>
                             <div class="stream-uptime">${'${calculateUptime(stream.started_at)}'}</div>
                         </div>
-                        <div class="stream-title">${'${stream.title}'}</div>
-                        <div class="stream-game">${'${stream.game_name || "No category"}'}</div>
                     </div>
                 ${"`"};
                 
