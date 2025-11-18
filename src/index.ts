@@ -1,4 +1,5 @@
 import { renderHtml } from "./renderHtml";
+import { renderMobileHtml } from "./renderMobileHtml";
 
 type JsonValue = Record<string, unknown> | Array<unknown> | string | number | boolean | null;
 
@@ -186,6 +187,12 @@ async function maybeJsonField(request: Request, field: string): Promise<string |
   return null;
 }
 
+function isMobileDevice(userAgent: string): boolean {
+  // Check for common mobile user agents
+  const mobileRegex = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini|Mobile|mobile/i;
+  return mobileRegex.test(userAgent);
+}
+
 export default {
   async fetch(request, env) {
     const url = new URL(request.url);
@@ -227,7 +234,18 @@ export default {
     } catch (e) {
       // Table might not exist yet; ignore
     }
-    return new Response(renderHtml(JSON.stringify({ autoselect_snapshot: snapshot }, null, 2)), {
+    
+    // Detect mobile device and serve appropriate HTML
+    const userAgent = request.headers.get("User-Agent") || "";
+    const htmlContent = JSON.stringify({ autoselect_snapshot: snapshot }, null, 2);
+    
+    if (isMobileDevice(userAgent)) {
+      return new Response(renderMobileHtml(htmlContent), {
+        headers: { "content-type": "text/html" },
+      });
+    }
+    
+    return new Response(renderHtml(htmlContent), {
       headers: { "content-type": "text/html" },
     });
   },
