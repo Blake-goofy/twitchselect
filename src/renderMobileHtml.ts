@@ -176,6 +176,45 @@ export function renderMobileHtml(content: string) {
             background: #8a50df; 
         }
 
+        /* Player Overlay */
+        .player-overlay {
+            position: fixed;
+            inset: 0;
+            background: #000;
+            z-index: 300;
+            display: none;
+        }
+        .player-overlay.open {
+            display: flex;
+            flex-direction: column;
+        }
+        .player-header {
+            background: #18181b;
+            padding: 12px 16px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .player-channel-name {
+            color: #fff;
+            font-size: 16px;
+            font-weight: 600;
+        }
+        .close-player-btn {
+            background: none;
+            border: none;
+            color: #fff;
+            font-size: 24px;
+            cursor: pointer;
+            padding: 4px 8px;
+        }
+        .player-iframe {
+            flex: 1;
+            border: none;
+            width: 100%;
+            height: 100%;
+        }
+
         /* Empty State */
         .no-results { 
             text-align: center; 
@@ -264,7 +303,15 @@ export function renderMobileHtml(content: string) {
     </div>
 
     <div class="footer">
-        <button class="open-btn" id="openBtn" disabled>Select streams to open</button>
+        <button class="open-btn" id="openBtn" disabled>Select a stream to watch</button>
+    </div>
+
+    <div class="player-overlay" id="playerOverlay">
+        <div class="player-header">
+            <div class="player-channel-name" id="playerChannelName"></div>
+            <button class="close-player-btn" id="closePlayerBtn">×</button>
+        </div>
+        <iframe id="playerIframe" class="player-iframe" allowfullscreen></iframe>
     </div>
 
     <script>
@@ -484,9 +531,20 @@ export function renderMobileHtml(content: string) {
 
         $('openBtn').addEventListener('click', () => {
             if (!selectedChannels.size) return;
-            // Open native Twitch site for the selected stream (in same tab to avoid app hijacking)
             const channel = Array.from(selectedChannels)[0];
-            location.href = 'https://www.twitch.tv/' + channel;
+            
+            // Use Twitch embedded player to avoid app hijacking
+            const domain = location.hostname;
+            const playerUrl = 'https://player.twitch.tv/?channel=' + channel + '&parent=' + domain + '&muted=false';
+            
+            $('playerIframe').src = playerUrl;
+            $('playerChannelName').textContent = channel;
+            $('playerOverlay').classList.add('open');
+        });
+
+        $('closePlayerBtn').addEventListener('click', () => {
+            $('playerOverlay').classList.remove('open');
+            $('playerIframe').src = '';
         });
 
         $('loginBtn').addEventListener('click', () => {
