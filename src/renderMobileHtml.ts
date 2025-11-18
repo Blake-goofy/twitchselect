@@ -7,6 +7,7 @@ export function renderMobileHtml(content: string) {
     <title>Twitch Select</title>
     <link rel="icon" type="image/x-icon" href="/multitwitch.ico?v=2">
     <link rel="icon" type="image/png" href="/multitwitch.png?v=2">
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png">
     <style>
         * { box-sizing: border-box; margin: 0; padding: 0; }
         body { 
