@@ -453,10 +453,18 @@ export function renderMobileHtml(content: string) {
         }
 
         function toggleSelection(login, card) {
+            // Mobile: single selection only (radio button behavior)
             if (selectedChannels.has(login)) {
+                // Clicking selected stream deselects it
                 selectedChannels.delete(login);
                 card.classList.remove('selected');
             } else {
+                // Clear all previous selections
+                selectedChannels.clear();
+                document.querySelectorAll('.stream-card.selected').forEach(c => {
+                    c.classList.remove('selected');
+                });
+                // Select the new stream
                 selectedChannels.add(login);
                 card.classList.add('selected');
             }
@@ -468,16 +476,17 @@ export function renderMobileHtml(content: string) {
             btn.disabled = selectedChannels.size === 0;
             
             if (selectedChannels.size === 0) {
-                btn.textContent = 'Select streams to open';
+                btn.textContent = 'Select a stream to watch';
             } else {
-                btn.textContent = 'Open ' + selectedChannels.size + ' Stream' + (selectedChannels.size > 1 ? 's' : '');
+                btn.textContent = 'Watch Stream';
             }
         }
 
         $('openBtn').addEventListener('click', () => {
             if (!selectedChannels.size) return;
-            const channels = Array.from(selectedChannels).join('/');
-            window.open('https://www.multitwitch.tv/' + channels, '_blank');
+            // Open native Twitch site for the selected stream
+            const channel = Array.from(selectedChannels)[0];
+            window.open('https://www.twitch.tv/' + channel, '_blank');
         });
 
         $('loginBtn').addEventListener('click', () => {
