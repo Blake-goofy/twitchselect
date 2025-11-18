@@ -195,10 +195,19 @@ export function renderMobileHtml(content: string) {
             justify-content: space-between;
             align-items: center;
         }
+        .player-info {
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
+        }
         .player-channel-name {
             color: #fff;
             font-size: 16px;
             font-weight: 600;
+        }
+        .player-uptime {
+            color: #8d8d96;
+            font-size: 12px;
         }
         .close-player-btn {
             background: none;
@@ -308,7 +317,10 @@ export function renderMobileHtml(content: string) {
 
     <div class="player-overlay" id="playerOverlay">
         <div class="player-header">
-            <div class="player-channel-name" id="playerChannelName"></div>
+            <div class="player-info">
+                <div class="player-channel-name" id="playerChannelName"></div>
+                <div class="player-uptime" id="playerUptime"></div>
+            </div>
             <button class="close-player-btn" id="closePlayerBtn">×</button>
         </div>
         <iframe id="playerIframe" class="player-iframe" allowfullscreen></iframe>
@@ -533,12 +545,19 @@ export function renderMobileHtml(content: string) {
             if (!selectedChannels.size) return;
             const channel = Array.from(selectedChannels)[0];
             
+            // Find the stream data for uptime
+            const streamData = liveStreams.find(s => s.user_login === channel);
+            
             // Use Twitch embedded player to avoid app hijacking
-            const domain = location.hostname;
-            const playerUrl = 'https://player.twitch.tv/?channel=' + channel + '&parent=' + domain + '&muted=false';
+            // parent must be the exact hostname (without port for localhost, include for production)
+            const hostname = location.hostname;
+            const parent = (hostname === 'localhost' || hostname === '127.0.0.1') ? hostname : location.host;
+            const playerUrl = 'https://player.twitch.tv/?channel=' + encodeURIComponent(channel) + 
+                              '&parent=' + encodeURIComponent(parent) + '&muted=false&autoplay=true';
             
             $('playerIframe').src = playerUrl;
             $('playerChannelName').textContent = channel;
+            $('playerUptime').textContent = streamData ? 'Live for ' + calculateUptime(streamData.started_at) : '';
             $('playerOverlay').classList.add('open');
         });
 
