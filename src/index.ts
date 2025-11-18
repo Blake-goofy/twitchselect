@@ -215,6 +215,14 @@ export default {
       const target = `https://raw.githubusercontent.com/Blake-goofy/twitchselect/main/src/twitch.png${v}`;
       return Response.redirect(target, 302);
     }
+    if (url.pathname === "/apple-touch-icon.png") {
+      const target = `https://raw.githubusercontent.com/Blake-goofy/twitchselect/main/apple-touch-icon.png`;
+      return Response.redirect(target, 302);
+    }
+    if (url.pathname === "/manifest.json") {
+      const target = `https://raw.githubusercontent.com/Blake-goofy/twitchselect/main/manifest.json`;
+      return Response.redirect(target, 302);
+    }
 
     // API namespace (route all /api/* to the handler)
     if (url.pathname.startsWith("/api/")) {

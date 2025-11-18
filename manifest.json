@@ -1,0 +1,21 @@
+{
+  "name": "Twitch Select",
+  "short_name": "TwitchSelect",
+  "description": "Browse and watch your followed Twitch streams",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#0e0e10",
+  "theme_color": "#a970ff",
+  "icons": [
+    {
+      "src": "/apple-touch-icon.png",
+      "sizes": "180x180",
+      "type": "image/png"
+    },
+    {
+      "src": "/multitwitch.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}

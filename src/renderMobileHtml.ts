@@ -8,6 +8,10 @@ export function renderMobileHtml(content: string) {
     <link rel="icon" type="image/x-icon" href="/multitwitch.ico?v=2">
     <link rel="icon" type="image/png" href="/multitwitch.png?v=2">
     <link rel="apple-touch-icon" href="/apple-touch-icon.png">
+    <link rel="manifest" href="/manifest.json">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="Twitch Select">
     <style>
         * { box-sizing: border-box; margin: 0; padding: 0; }
         body { 
