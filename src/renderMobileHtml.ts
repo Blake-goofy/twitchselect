@@ -484,9 +484,9 @@ export function renderMobileHtml(content: string) {
 
         $('openBtn').addEventListener('click', () => {
             if (!selectedChannels.size) return;
-            // Open native Twitch site for the selected stream
+            // Open native Twitch site for the selected stream (in same tab to avoid app hijacking)
             const channel = Array.from(selectedChannels)[0];
-            window.open('https://www.twitch.tv/' + channel, '_blank');
+            location.href = 'https://www.twitch.tv/' + channel;
         });
 
         $('loginBtn').addEventListener('click', () => {
